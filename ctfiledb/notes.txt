@@ -1,0 +1,22 @@
+**base de données**
+se logger en super user
+psql -U postgres
+avant de lancer createdb.sql
+(s'assurer que la vision de l'onglet sécurité est activée dans les options de visibilté des dossiers
+et que le répertoire du tablespace est détenu par postgres)
+
+(create role minh INHERIT;
+grant all privileges on database pfdb to minh;
+grant "user" to minh;)
+
+grant all privileges on database pfdb to "user";
+
+(ou peut être
+create role minh login;
+alter role minh with password 'password';)
+
+créer les tables
+\i create.sql
+
+afficher les tables présentes
+\dt

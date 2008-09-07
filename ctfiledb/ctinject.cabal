@@ -1,0 +1,22 @@
+Cabal-Version: >= 1.2
+name: ctinject
+Version: 0.0.1
+Author: MDB
+license-file: COPYRIGHT
+Executable ctinject
+  Include-dirs: /home/local/include, .
+  Extra-lib-dirs: /home/local/lib
+  Main-is: ctinject.hs
+  Build-Depends:base, HDBC,hslogger, MissingH, HDBC-postgresql, containers, old-locale, old-time, filepath, directory
+  GHC-Options: -O2 -fglasgow-exts
+  LD-Options: -L/home/local/lib
+  CC-Options: -I/home/local/include
+Executable ctsearch
+  Include-dirs: /home/local/include, .
+  Extra-lib-dirs: /home/local/lib
+  Main-is: ctsearch.hs
+  Build-Depends:base, HDBC,hslogger, MissingH, HDBC-postgresql, containers, old-locale, old-time, filepath, directory
+  GHC-Options: -O2 -fglasgow-exts
+  LD-Options: -L/home/local/lib
+  CC-Options: -I/home/local/include
+
