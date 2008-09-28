@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <bean id="dbcpDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" lazy-init="true">
+        <property name="driverClassName">
+            <value>COM.ibm.db2.jdbc.app.DB2Driver</value>
+        </property>
+        <property name="url">
+            <value>jdbc:db2:TSTOFFRE</value>
+        </property>
+        <property name="username">
+            <value>db2admin</value>
+        </property>
+        <property name="password">
+            <value>db2admin</value>
+        </property>
+        <property name="removeAbandoned">
+            <value>true</value>
+        </property>
+        <property name="removeAbandonedTimeout">
+            <value>30</value>
+        </property>
+        <property name="maxActive">
+            <value>18</value>
+        </property>
+        <property name="maxWait">
+            <value>5000</value>
+        </property>
+        <property name="maxOpenPreparedStatements">
+            <value>24</value>
+        </property>
+    </bean>
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dbcpDataSource"/>
+    </bean>
+    <bean id="templateJDBCDAO" lazy-init="true">
+        <property name="dataSource" ref="dbcpDataSource" />
+    </bean>
+    <bean id="UtilDao" class="scalaapplication1.UtilDao" parent="templateJDBCDAO"/>
+</beans>
