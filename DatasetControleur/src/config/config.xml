@@ -39,5 +39,5 @@
     <bean id="templateJDBCDAO" lazy-init="true">
         <property name="dataSource" ref="dbcpDataSource" />
     </bean>
-    <bean id="UtilDao" class="scalaapplication1.UtilDao" parent="templateJDBCDAO"/>
+    <bean id="UtilDao" class="datasetcontroleur.UtilDao" parent="templateJDBCDAO"/>
 </beans>
