@@ -45,9 +45,9 @@ object Main {
         //val valeurs = attributes.map({x:MetaData => quote(x.value.toString, x.key, typesColonne)})
         val pairs = for (att:MetaData <-data.attributes if att.value.toString != "[NULL]") yield (att.key, quote(att.value.toString, att.key, typesColonne))
         //requete+= (cles.mkString(", ") + ") VALUES (" + valeurs.mkString(", ") + ")")
-        requete+= (IterateurAuxiliaire(pairs.elements, {x:Tuple2[_,_] => x._1}).mkString(", ")
+        requete+= ((pairs.elements.map {x:Tuple2[_,_] => x._1}).mkString(", ")
                    + ") VALUES ("
-                   + IterateurAuxiliaire(pairs.elements, {x:Tuple2[_,_] => x._2}).mkString(", ") + ")")
+                   + (pairs.elements.map {x:Tuple2[_,_] => x._2}).mkString(", ") + ")")
         println(requete)
         //jdbcTemplate.execute(requete)
       }
@@ -95,10 +95,6 @@ object Main {
     def hasNext = ite.hasNext
     def next = f(ite.next)
   }*/
-  
-  case class IterateurAuxiliaire[A,B](ite:Iterator[Tuple2[A,B]], f:Tuple2[A,B]=>B)extends Iterator[B]{
-    def hasNext = ite.hasNext
-    def next = f(ite.next)
-  }
+
 }
 
