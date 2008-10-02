@@ -90,11 +90,5 @@ object Main {
     dicColonne += label -> typesColonne
     return typesColonne
   }
-  
-  /*def iterateurAuxiliaire[A,B](ite:Iterator[Tuple2[A,B]], f:Tuple2[A,B]=>B):Iterator[B] = new Iterator[B]{
-    def hasNext = ite.hasNext
-    def next = f(ite.next)
-  }*/
-
 }
 
