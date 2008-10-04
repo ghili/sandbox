@@ -1,0 +1,5 @@
+*.class
+*.o
+*.hi
+*.exe
+*.exe.manifest
