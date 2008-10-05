@@ -1,5 +1,5 @@
 
-module CtDataOperations(recordFolderTree, search) where
+module CtDataOperations(recordFolderTree, search, SearchCriteria(..)) where
 
 import CtFileBrowsing
 import CtDataAccess
@@ -10,6 +10,7 @@ import System.Time
 import System.Locale (defaultTimeLocale)
 import System.FilePath(dropDrive, dropExtension, takeExtension)
 import Text.Printf
+import Data.Maybe
 
 -- | ouvre une connection à la base de donnée puis insère les données contenues
 -- dans l'arbre.
@@ -85,6 +86,15 @@ checkFile ((FileInfo a f size c):xs)               = size + (checkFile xs)
 checkFile []                          = 0
 checkFile _                          = 0
 
+
+
+data SearchCriteria = SearchCriteria {
+      keyword :: String,
+      ignoreCase :: Bool,
+      minSize :: Maybe Integer,
+      maxSize :: Maybe Integer
+}
+
 data SearchResult = FileResult {
   srfilename    :: String,
   srsize        :: Integer,
@@ -100,46 +110,60 @@ instance Show(SearchResult) where
   show (FileResult filename size dtfichier support folderpath) = 
     (printf "%-20s %10ib  %15s" filename size (formatCalendarTime defaultTimeLocale "%d/%m/%C %H:%M:%S" dtfichier)) ++ " in " ++ support ++ "@" ++ folderpath
   show (FolderResult support folderpath) = support ++ "@" ++ folderpath
-  show SearchResultError                                         = "SearchResultError"
+  show SearchResultError                                       = "SearchResultError"
 
+-- | TODO state monad
 -- | effectue une recherche sur la base des fichiers
 search
-  :: String         -- ^ critère de recherche
-  -> Bool           -- ^ ignore case
-  -> Maybe Integer  -- ^ taille minimum
-  -> Maybe Integer  -- ^ taille maximum
+  :: SearchCriteria -- ^ critères de recherche
   -> Connection     -- ^ connection courante
   -> IO ()
-search criteria ic minsize maxsize dbh = handleSqlError $ do
+search criteria dbh = handleSqlError $ do
   putStrLn "fichiers trouves:"
-  fileResults <- searchFile criteria ic minsize maxsize dbh
+  fileResults <- searchFile criteria dbh
   putStrLn $ foldr ((++) . (++ "\n") . show) "" fileResults
   putStrLn "dossiers trouves :"
-  folderResults <- searchFolder criteria ic minsize maxsize dbh
+  folderResults <- searchFolder criteria dbh
   putStrLn $ foldr ((++) . (++ "\n") . show) "" folderResults
 
-searchFolder criteria ic minsize maxsize dbh = handleSqlError $ do
-  searchQuery dbh "SELECT s.nom, d.chemin FROM ct.dossier as d JOIN ct.support as s ON (d.idsupport=s.id) WHERE d.nom " criteria ic populateFolderResult
-  where populateFolderResult (support:(folderpath:_)) = FolderResult {srsupport = fromSql support, srfolderpath= fromSql folderpath}
+searchFolder criteria dbh = handleSqlError $ do
+  searchQuery dbh query  criteria populateFolderResult
+  where criterion = addKeywordCriteriaWithIgnoreCase [] criteria "d.nom"
+        query = "SELECT s.nom, d.chemin FROM ct.dossier as d JOIN ct.support as s ON (d.idsupport=s.id) WHERE " ++ (mkString criterion " AND ")
+        populateFolderResult (support:(folderpath:_)) = FolderResult {srsupport = fromSql support, srfolderpath= fromSql folderpath}
         populateFolderResult _ = SearchResultError
 
-searchFile criteria ic minsize maxsize dbh = handleSqlError $ do
-  searchQuery dbh "SELECT f.nom, f.extension, f.taille, f.dtfichier, s.nom, d.chemin FROM ct.fichier as f JOIN ct.dossier as d ON (f.iddossier=d.id) JOIN ct.support as s ON (d.idsupport=s.id) WHERE f.nom " criteria ic populateFileResult
-  where populateFileResult (filename:(extension:(size:(dtfichier:(support:(folderpath:_)))))) = FileResult {srfilename = (fromSql filename) ++ fromSql extension, srsize = fromSql size, srdtfichier = fromSql dtfichier,srsupport = fromSql support, srfolderpath= fromSql folderpath}
+searchFile criteria  dbh = handleSqlError $ do
+  searchQuery dbh query criteria populateFileResult
+  where criterion = addSizeCriteria (addKeywordCriteriaWithIgnoreCase [] criteria "f.nom") criteria
+        query = "SELECT f.nom, f.extension, f.taille, f.dtfichier, s.nom, d.chemin FROM ct.fichier as f JOIN ct.dossier as d ON (f.iddossier=d.id) JOIN ct.support as s ON (d.idsupport=s.id) WHERE " ++ (mkString criterion " AND ")
+        populateFileResult (filename:(extension:(size:(dtfichier:(support:(folderpath:_)))))) = FileResult {srfilename = (fromSql filename) ++ fromSql extension, srsize = fromSql size, srdtfichier = fromSql dtfichier,srsupport = fromSql support, srfolderpath= fromSql folderpath}
         populateFileResult _ = SearchResultError
 
+
+addKeywordCriteriaWithIgnoreCase::[String] -> SearchCriteria -> String -> [String]
+addKeywordCriteriaWithIgnoreCase criterion criteria alias = 
+  (alias ++ (case ignoreCase criteria of True   -> " ILIKE ? "
+                                         False  -> " LIKE ? " )) : criterion
+
+--TODO ajouter les valeurs dans une autre liste pour passer à la méthode execute
+--ajoute les critères sur la taille min et max si présents
+addSizeCriteria::[String] -> SearchCriteria -> [String]
+addSizeCriteria criterion criteria =  
+    criterion ++ ((maybeToList $ minSize criteria) >>= \x -> [" f.taille > "++ show x]) ++ ((maybeToList $ maxSize criteria) >>= \x -> [" f.taille < "++ show x])
+
+mkString (x:xs) sep = x ++ foldl (++) [] (addSep xs sep)
+    where addSep (a:as) sep = (sep ++ a) : addSep as sep  
 
 searchQuery
   :: Connection
   -> String
-  -> String
-  -> Bool
+  -> SearchCriteria
   -> ([SqlValue] -> SearchResult)
   -> IO([SearchResult])
-searchQuery dbh query criteria ic populate = do 
-  sth <- prepare dbh (query ++ (case ic of True   -> " ILIKE ?"
-                                           False  -> " LIKE ?" ))
-  execute sth [toSql ("%" ++ criteria ++ "%")]
+searchQuery dbh query criteria populate = do 
+  sth <- prepare dbh query 
+  execute sth [toSql ("%" ++ (keyword criteria) ++ "%")]
   rows <- fetchAllRows sth
   finish sth
   return $ map populate rows

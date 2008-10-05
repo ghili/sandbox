@@ -13,11 +13,8 @@ object TableIntrospection {
    *
    */
   def memoColonnes(label:String, jdbcTemplate: JdbcTemplate, dicColonne:HashMap[String,TypeParColonneType]):TypeParColonneType = {
-    val pos = label.indexOf(".")
-    //val tableInfo:Array[String] = label.split(".")
-    val schema = label.substring(0,pos)
-    val tabName = label.substring(pos+1)
-    val colonnes:JavaList[_] = jdbcTemplate.queryForList("SELECT colName, typeName FROM SYSCAT.COLUMNS WHERE tabSchema =? AND tabName = ?", Array[Object](schema, tabName))
+    val tableInfo:Array[String] = label.split('.')
+    val colonnes:JavaList[_] = jdbcTemplate.queryForList("SELECT colName, typeName FROM SYSCAT.COLUMNS WHERE tabSchema =? AND tabName = ?", Array[Object](tableInfo(0), tableInfo(1)))
     val typesColonne:TypeParColonneType = new TypeParColonneType
 
     val ite = colonnes.iterator

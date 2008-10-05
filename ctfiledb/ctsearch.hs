@@ -23,8 +23,7 @@ defaultOptions = Options
   }
 
 options :: [OptDescr(Options -> Options)]
-options = [ Option ['c'] ["case sensitive"] (NoArg (\ o ->
-      o{optIgnoreCase = False}))   "ignore case"
+options = [ Option ['c'] ["case sensitive"] (NoArg (\ o -> o{optIgnoreCase = False}))   "ignore case"
           , Option ['m'] ["minsize"] (OptArg (\f o -> case f of (Just x) -> o {optMinSize = Just (read x)}
                                                                 Nothing  -> o ) "") "min size"
           , Option ['M'] ["maxsize"] (OptArg (\f o -> case f of (Just x) -> o {optMaxSize = Just (read x)}
@@ -41,6 +40,9 @@ main :: IO ()
 main = do 
   fh <- fileHandler "out_search.log" DEBUG
   updateGlobalLogger rootLoggerName (setLevel INFO . setHandlers [fh])
-  (options, criteria) <- getArgs >>= parseOptions
-  connectAndDo (search criteria (optIgnoreCase options) (optMinSize options) (optMaxSize options))
+  (options, keyword) <- getArgs >>= parseOptions
+  connectAndDo (search $ toSearchCriteria keyword options)
 
+toSearchCriteria :: String -> Options -> SearchCriteria
+toSearchCriteria kw o = 
+ SearchCriteria{ keyword = kw, ignoreCase = optIgnoreCase o, minSize = optMinSize o , maxSize = optMaxSize o}
