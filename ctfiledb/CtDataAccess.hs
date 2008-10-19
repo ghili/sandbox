@@ -1,5 +1,5 @@
 
-module CtDataAccess where
+module CtDataAccess(connectAndDo, executeQuery, getNextSequenceValue, toSqlTimeStamp, toSqlMaybe, readDbConfig) where
 
 import Database.HDBC 
 import Database.HDBC.PostgreSQL 
@@ -7,16 +7,29 @@ import System.Time (CalendarTime, formatCalendarTime)
 import System.Locale (defaultTimeLocale)
 import System.Log.Logger
 import System.IO.Error
+import System.IO.Unsafe(unsafePerformIO)
 
 logbase = "CtDataAccess"
 
+data DbConfig = DbConfig {
+      dbName :: String,
+      password :: String
+} deriving Show
+
+-- | lit le fichier de configuration pour récupérer le nom de la base de donnée et le password
+readDbConfig = DbConfig{dbName = readLines!!0, password = readLines!!1}
+    where readLines = lines $ unsafePerformIO $ readFile "config.properties"
+
 -- | connecte à la base puis exécute une action
 connectAndDo
-  :: (Connection -> IO a)
+  :: DbConfig 
+  ->(Connection -> IO a)
   ->IO()
-connectAndDo action = do
-  dbh <- connectPostgreSQL "dbname=pfdb port=5432 password=carcasse connect_timeout=3"
+connectAndDo dbconfig action  = do
+  debugM logbase "Connection to database"
+  dbh <- connectPostgreSQL $ "dbname="++ dbName dbconfig ++" port=5432 password="++ password dbconfig ++" connect_timeout=3"
   action dbh
+  debugM logbase "Disconnection from database"
   disconnect dbh
 
 -- | exécute une requête sql
