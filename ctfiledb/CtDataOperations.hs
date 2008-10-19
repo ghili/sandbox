@@ -9,8 +9,11 @@ import Database.HDBC.PostgreSQL
 import System.Time
 import System.Locale (defaultTimeLocale)
 import System.FilePath(dropDrive, dropExtension, takeExtension)
+import System.Log.Logger
 import Text.Printf
 import Data.Maybe
+
+logbase = "CtDataOperations"
 
 -- | ouvre une connection à la base de donnée puis insère les données contenues
 -- dans l'arbre.
@@ -93,7 +96,7 @@ data SearchCriteria = SearchCriteria {
       ignoreCase :: Bool,
       minSize :: Maybe Integer,
       maxSize :: Maybe Integer
-}
+} deriving Show
 
 data SearchResult = FileResult {
   srfilename    :: String,
@@ -119,6 +122,7 @@ search
   -> Connection     -- ^ connection courante
   -> IO ()
 search criteria dbh = handleSqlError $ do
+  debugM logbase $ show criteria
   putStrLn "fichiers trouves:"
   fileResults <- searchFile criteria dbh
   putStrLn $ foldr ((++) . (++ "\n") . show) "" fileResults
@@ -154,6 +158,7 @@ addSizeCriteria criterion criteria =
 
 mkString (x:xs) sep = x ++ foldl (++) [] (addSep xs sep)
     where addSep (a:as) sep = (sep ++ a) : addSep as sep  
+          addSep [] sep = []
 
 searchQuery
   :: Connection
@@ -162,9 +167,10 @@ searchQuery
   -> ([SqlValue] -> SearchResult)
   -> IO([SearchResult])
 searchQuery dbh query criteria populate = do 
+  debugM logbase query
   sth <- prepare dbh query 
   execute sth [toSql ("%" ++ (keyword criteria) ++ "%")]
   rows <- fetchAllRows sth
-  finish sth
+--  finish sth
   return $ map populate rows
 

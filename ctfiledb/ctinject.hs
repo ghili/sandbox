@@ -31,8 +31,5 @@ main = do
   updateGlobalLogger rootLoggerName (setLevel DEBUG . setHandlers [fh])
   (targetlabel, folderpath) <- getArgs >>= parseOptions
   folderForest <- browseEachFolder [folderpath] 
-  mapM_ (connectAndDo . (recordFolderTree targetlabel)) folderForest
+  mapM_ ((connectAndDo readDbConfig) . (recordFolderTree targetlabel)) folderForest
   debugM rootLoggerName (foldr ((++) . (++ "\n") . show . flatten) "" folderForest)
-
-
-
