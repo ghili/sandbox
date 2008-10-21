@@ -4,12 +4,12 @@ import collection.mutable._
 import org.apache.commons.lang._
 import TableIntrospection.TypeParColonneType
 
-object QueryBuilder {
+class QueryBuilder {
 
   def buildInsertQuery(tableName:String, attributes:Iterable[(_,_)], typesColonne:TypeParColonneType):String = {
-    return "INSERT INTO "+tableName+"(" + ((attributes.elements.map {x:(_,_) => x._1}) mkString ", "
+    return "INSERT INTO "+tableName+"(" + ((attributes.elements.map {x:(_,_) => x._1}).mkString(", ")
                                         + ") VALUES ("
-                                        + (attributes.elements.map {x:(_,_) => format(x._2, x._1.toString, typesColonne)}) mkString ", " + ")")
+                                        + (attributes.elements.map {x:(_,_) => format(x._2, x._1.toString, typesColonne)}).mkString(", ") + ")")
   }
 
   def buildDeleteQuery(tableName:String, attributes:Iterable[(_,_)], colonnesPks:List[String], typesColonne:TypeParColonneType):String = {
@@ -24,9 +24,8 @@ object QueryBuilder {
   private def format[A,B,C](paramValeur:A, cleColonne:B, typesColonne:HashMap[B, C]):String = {
     val valeur = paramValeur.toString
     def quote(v:String):String = "'"+ StringEscapeUtils.escapeSql(v) +"'"
-    val typeColonne = typesColonne get cleColonne getOrElse "UNKNOWN"
+    val typeColonne = typesColonne get cleColonne getOrElse (throw new Exception("!! Colonne non trouvée pour la clé [" + cleColonne + "] !!"))
     return typeColonne match{
-      case "UNKNOWN" => throw new Exception("----colonne non trouvée pour la clé [" + cleColonne + "]")
       case "SMALLINT" | "BIGINT" | "INTEGER" | "DECIMAL" => valeur
       case "BLOB" => "BLOB(" + quote(valeur) + ")"
       case "TIMESTAMP" => quote(if (valeur.size < 11){ valeur + " 00:00:00.0" }else{valeur})
