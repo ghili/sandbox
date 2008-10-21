@@ -8,46 +8,42 @@ import org.springframework.transaction.support._
 import org.springframework.transaction._
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import io.Source
+import TableIntrospection.TypeParColonneType
 import java.util.{List=> JavaList}
 
 
+//Composants abstraits
 trait DbTemplate {
   def execute(query:String)  
   def queryForList(query:String, params:Array[Object]):JavaList[_]
   def queryForList(query:String, params:Array[Object], returnType:Class[_]):JavaList[_]
 }
 
+//implémentations
 trait SpringJdbcTemplate extends DbTemplate {
   var dbTemplate:JdbcTemplate = null
-
-  def execute(query:String) = dbTemplate execute query
+  def execute(query:String) = {println(query)
+                               dbTemplate execute query}
   def queryForList(query:String, params:Array[Object]):JavaList[_] =  dbTemplate.queryForList(query,params)
   def queryForList(query:String, params:Array[Object], returnType:Class[_]):JavaList[_] =  dbTemplate.queryForList(query,params,returnType)
 }
 
-object TableIntrospection {type TypeParColonneType = HashMap[String,String]}
-abstract class TableIntrospection  requires (TableIntrospection with DbTemplate) {
-  import TableIntrospection.TypeParColonneType
-  def memoColonnes[A](label:A, extract:A => Array[Object],  dicColonne:HashMap[A,TypeParColonneType]):TypeParColonneType
-  def memoPK[A](label:A, extract:A => Array[Object], dicColonnePk:HashMap[A,List[String]]):List[String]
-}
+trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: DbTemplate=>
+  val tableIntrospection = new Db2TableIntrospection
 
-/*
- abstract class AbstractDatasetControleur {
-  type DbTemplate <: AbstractDbTemplate
-  type QueryBuilder <: AbstractQueryBuilder
-  type TableIntrospection <: AbstractTableIntrospection
-
-  abstract class AbstractCommand {
-    def insert(dataset:Elem)
-    def delete(dataset:Elem)
+  class Db2TableIntrospection extends TableIntrospection {
+    val SELECT_TYPE_COLUMNS = "SELECT colName, typeName FROM SYSCAT.COLUMNS WHERE tabSchema = ? AND tabName = ?"
+    val SELECT_COLUMNPK = """ SELECT kc.colName FROM SYSCAT.KEYCOLUSE kc
+                              JOIN SYSCAT.TABCONST cst ON cst.constName = kc.constName AND cst.tabSchema = kc.tabSchema AND cst.tabName = kc.tabName
+                              WHERE kc.tabSchema = ? AND kc.tabName = ? AND cst.type = 'P'"""
   }
 }
 
-object DatasetControleur extends AbstractDatasetControleur{
-  type DbTemplate = SpringJdbcTemplate
+class DatasetControleur requires (DatasetControleur with DbTemplate with TableIntrospectionComponent) extends DatasetCommandComponent {
+  val datasetCommand = new DatasetCommand
+  val queryBuilder = new QueryBuilder
 }
-*/
+
 object Main {
 
   /**
@@ -64,7 +60,7 @@ object Main {
     
     val file = this.getClass().getClassLoader getResource "config/proprietes" getFile
 
-    //lecture du fichier et récupération de la ligne définissant le dataset
+    //lecture du fichier de configuration et récupération de la ligne définissant le dataset
     val lines = for {
       (line) <- Source fromFile(file) getLines
     } yield (line)
@@ -72,22 +68,20 @@ object Main {
     val fileName = line.getOrElse(throw new Exception("dataset file name not found")).split("=")(1)
     
     val dataset = XML loadFile(fileName)
-    val tableIntrospection = new Db2TableIntrospection with SpringJdbcTemplate
-    val command = new DatasetCommand(tableIntrospection) with SpringJdbcTemplate
-    tableIntrospection.dbTemplate = jdbcTemplate
-    command.dbTemplate = jdbcTemplate
+    val controleur = new DatasetControleur with SpringJdbcTemplate with Db2TableIntrospectionComponent
+    controleur.dbTemplate = jdbcTemplate
 
     if ("testInsert" == action){
       val txStatus = txManager getTransaction(txDef)
       try{
-        command insert dataset
+        controleur.datasetCommand insert dataset
       } finally{
         txManager rollback(txStatus)
       }
     }else if("delete" == action){
-      command delete dataset
+      controleur.datasetCommand delete dataset
     }else if("insert" ==action){
-        command insert dataset
+        controleur.datasetCommand insert dataset
     }
     print("cool ('"+action+"' lines from "+ fileName +")")
   }
