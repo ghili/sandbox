@@ -1,0 +1,4 @@
+graphLog.cmo: logParsers.cmo 
+graphLog.cmx: logParsers.cmx 
+main.cmo: logParsers.cmo graphLog.cmo 
+main.cmx: logParsers.cmx graphLog.cmx 
