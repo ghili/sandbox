@@ -40,6 +40,7 @@ trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate
 
     private def notNullDbValue = (_:String) != "[NULL]"
 
+    /** sépare le schéma et le nom de la table */
     private def extractSchemaTable(label:String):Array[Object] = (label split '.') map {(_:String).toUpperCase}
   }
 }
