@@ -17,36 +17,33 @@ trait TableIntrospectionComponent { this: DbTemplate=>
      *
      */
     def memoColonnes[A](label:A, extract:A => Array[Object],  dicColonne:HashMap[A,TypeParColonneType]):TypeParColonneType = {
-      val colonnes:JavaList[_] = queryForList(SELECT_TYPE_COLUMNS, extract(label))
       val typesColonne = new TypeParColonneType
 
-      val ite = colonnes.iterator
+      val ite = queryForList(SELECT_TYPE_COLUMNS, extract(label)).iterator
       while(ite.hasNext){
         val entree = ite.next.asInstanceOf[JavaMap[String, String]]
         typesColonne += entree.get("COLNAME") -> entree.get("TYPENAME")
       }
       dicColonne += label -> typesColonne
-      return typesColonne
+      typesColonne
     }
 
     /**
      * Recherche les colonnes formant la clé primaire d'une table et garde en cache le résultat
      */
     def memoPK[A](label:A, extract:A => Array[Object], dicColonnePk:HashMap[A,List[String]]):List[String] = {
-      val colonnes:JavaList[_] = queryForList(SELECT_COLUMNPK, extract(label), classOf[String])
-      var resultat = List[String]()
-
+      val colonnes = queryForList(SELECT_COLUMNPK, extract(label), classOf[String])
       if (colonnes.isEmpty){
         throw new Exception("pk introuvable")
       }
 
+      var resultat = List[String]()
       val ite = colonnes.iterator
       while(ite.hasNext){
-        val entree = ite.next.asInstanceOf[String]
-        resultat = entree :: resultat
+        resultat = ite.next.asInstanceOf[String] :: resultat
       }
       dicColonnePk += label -> resultat
-      return resultat
+      resultat
     }
   }
 }
