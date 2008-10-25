@@ -42,12 +42,13 @@ trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: 
   }
 }
 
-class DatasetControleur { this: DbTemplate with TableIntrospectionComponent with DatasetCommandComponent =>
-  val datasetCommand = new DatasetCommand
-  val queryBuilder = new QueryBuilder
-}
-
 object Main {
+
+  // Classe agrégant les composants
+  class DatasetControleur { this: DbTemplate with TableIntrospectionComponent with DatasetCommandComponent =>
+    val datasetCommand = new DatasetCommand
+    val queryBuilder = new QueryBuilder
+  }
 
   /**
    * @param args the command line arguments
@@ -81,7 +82,7 @@ object Main {
   /**
    * Effectue une action en transaction en rollbackant à la fin
    */
-  private def noCommit (context:ApplicationContext, action:Elem => Unit) = {
+  private def noCommit (context:ApplicationContext, action: Elem => Unit) = {
     val txManager = (context getBean "txManager").asInstanceOf[DataSourceTransactionManager]
     val txDef = new DefaultTransactionDefinition
     txDef.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW)
