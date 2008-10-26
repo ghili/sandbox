@@ -2,6 +2,7 @@ package datasetcontroleur
 
 import xml._
 import collection.mutable._
+import collection.jcl.BufferWrapper
 import org.springframework.context.support._
 import org.springframework.context.ApplicationContext
 import org.springframework.jdbc.core.JdbcTemplate
@@ -15,20 +16,23 @@ import java.util.{List=> JavaList}
 
 //Composants abstraits
 trait DbTemplate {
-  def execute(query:String)  
-  def queryForList(query:String, params:Array[Object]):JavaList[_]
-  def queryForList(query:String, params:Array[Object], returnType:Class[_]):JavaList[_]
+  def execute(query:String)
+  def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T]
+  def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T]
 }
 
-//implémentations
+//Implémentations
 trait SpringJdbcTemplate extends DbTemplate {
   var dbTemplate:JdbcTemplate = null
   def execute(query:String) = {
     println(query)
     dbTemplate execute query
   }
-  def queryForList(query:String, params:Array[Object]):JavaList[_] =  dbTemplate.queryForList(query,params)
-  def queryForList(query:String, params:Array[Object], returnType:Class[_]):JavaList[_] =  dbTemplate.queryForList(query,params,returnType)
+  def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] =
+  new BufferWrapper[T]{def underlying = dbTemplate.queryForList(query,params).asInstanceOf[JavaList[T]]}.toList
+
+  def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] = 
+  new BufferWrapper[T]{def underlying = dbTemplate.queryForList(query,params,returnType).asInstanceOf[JavaList[T]]}.toList
 }
 
 trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: DbTemplate=>

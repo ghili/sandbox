@@ -21,9 +21,7 @@ trait TableIntrospectionComponent { this: DbTemplate=>
     def memoColonnes[A](label:A, extract:A => Array[Object],  dicColonne:HashMap[A,TypeParColonneType]):TypeParColonneType = {
       val typesColonne = new TypeParColonneType
 
-      val ite = queryForList(SELECT_TYPE_COLUMNS, extract(label)).iterator
-      while(ite.hasNext){
-        val entree = ite.next.asInstanceOf[JavaMap[String, String]]
+      for(entree:JavaMap[String, String]<- queryForList(SELECT_TYPE_COLUMNS, extract(label))){
         typesColonne += entree.get("COLNAME") -> entree.get("TYPENAME")
       }
       dicColonne += label -> typesColonne
@@ -40,9 +38,8 @@ trait TableIntrospectionComponent { this: DbTemplate=>
       }
 
       var resultat = List[String]()
-      val ite = colonnes.iterator
-      while(ite.hasNext){
-        resultat = ite.next.asInstanceOf[String] :: resultat
+      for(element:String<-colonnes){
+        resultat = element :: resultat
       }
       dicColonnePk += label -> resultat
       resultat
