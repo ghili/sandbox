@@ -7,7 +7,7 @@ import TableIntrospection.TypeParColonneType
 class QueryBuilder {
 
   def buildInsertQuery(tableName:String, attributes:Iterable[(_,_)], typesColonne:TypeParColonneType):String = {
-    "INSERT INTO "+tableName+"(" + ((attributes.elements.map {(_:(_,_))._1}).mkString(", ")
+    "INSERT INTO "+tableName+" (" + ((attributes.elements.map {(_:(_,_))._1}).mkString(", ")
                                  + ") VALUES ("
                                  + (attributes.elements.map {x:(_,_) => format(x._2, x._1.toString, typesColonne)}).mkString(", ") + ")")
   }

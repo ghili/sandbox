@@ -60,6 +60,7 @@ object Main {
     val datasetFileName = if (args.length < 2){
       val file = this.getClass().getClassLoader getResource "config/proprietes" getFile
       
+      //@todo corriger bug quand le nom du fichier est suivi d'un saut de ligne
       (Source fromFile(file) getLines)
       .find {(_:String) startsWith "dataset="}
       .getOrElse(throw new Exception("dataset file name not found")).split("=")(1)
@@ -74,6 +75,7 @@ object Main {
         case "testInsert" => noCommit(context, controleur.datasetCommand insert _)
         case "delete" => controleur.datasetCommand delete _
         case "insert" => controleur.datasetCommand insert _
+        case _ => throw new RuntimeException("Je n'exécute aucune action par défaut")
       })(dataset)
     
     print("cool ('"+args(0)+"' lines from "+ datasetFileName +")")

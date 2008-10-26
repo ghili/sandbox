@@ -1,13 +1,15 @@
 package datasetcontroleur
+
 import collection.mutable._
 import org.springframework.jdbc.core._
 import java.util.{List=> JavaList}
 import java.util.{Map=> JavaMap}
 
+object TableIntrospection {type TypeParColonneType = HashMap[String,String]}
+
 trait TableIntrospectionComponent { this: DbTemplate=>
   val tableIntrospection:TableIntrospection
   
-  object TableIntrospection {type TypeParColonneType = HashMap[String,String]}
   abstract class TableIntrospection {
     import TableIntrospection.TypeParColonneType
     val SELECT_TYPE_COLUMNS:String

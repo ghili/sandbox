@@ -3,9 +3,9 @@ package datasetcontroleur
 import xml._
 import collection.mutable._
 import org.springframework.jdbc.core.JdbcTemplate
-import TableIntrospection.TypeParColonneType
   
 trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate =>
+  import TableIntrospection.TypeParColonneType
   val queryBuilder:QueryBuilder
 
   class DatasetCommand {
