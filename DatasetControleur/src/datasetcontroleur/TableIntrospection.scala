@@ -6,7 +6,7 @@ import java.util.{Map=> JavaMap}
 
 object TableIntrospection {type TypeParColonneType = HashMap[String,String]}
 
-trait TableIntrospectionComponent { this: DbTemplate=>
+trait TableIntrospectionComponent { this: DbTemplateComponent =>
   val tableIntrospection:TableIntrospection
   
   abstract class TableIntrospection {
@@ -20,7 +20,7 @@ trait TableIntrospectionComponent { this: DbTemplate=>
     def memoColonnes(label:String, dicColonne:HashMap[String,TypeParColonneType]):TypeParColonneType = {
       val typesColonne = new TypeParColonneType
 
-      for(entree:JavaMap[String, String]<- queryForList(SELECT_TYPE_COLUMNS, extractSchemaTable(label))){
+      for(entree:JavaMap[String, String]<- dbTemplate.queryForList(SELECT_TYPE_COLUMNS, extractSchemaTable(label))){
         typesColonne += entree.get("COLNAME") -> entree.get("TYPENAME")
       }
       dicColonne += label -> typesColonne
@@ -31,7 +31,7 @@ trait TableIntrospectionComponent { this: DbTemplate=>
      * Recherche les colonnes formant la clé primaire d'une table et garde en cache le résultat
      */
     def memoPK(label:String, dicColonnePk:HashMap[String,List[String]]):List[String] = {
-      val resultat = queryForList(SELECT_COLUMNPK, extractSchemaTable(label), classOf[String])
+      val resultat = dbTemplate.queryForList(SELECT_COLUMNPK, extractSchemaTable(label), classOf[String])
       if (resultat.isEmpty){
         throw new Exception("pk introuvable")
       }

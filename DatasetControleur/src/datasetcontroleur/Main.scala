@@ -6,36 +6,31 @@ import collection.mutable._
 import collection.jcl.BufferWrapper
 import org.springframework.context.support._
 import org.springframework.context.ApplicationContext
-import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.transaction.support._
 import org.springframework.transaction._
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
-import TableIntrospection.TypeParColonneType
 import java.util.{List=> JavaList}
 
+trait SpringJdbcTemplateComponent extends DbTemplateComponent{
+  var underlyingDbTemplate:JdbcTemplate = null
+  val dbTemplate = new SpringJdbcTemplate
 
-//Composants abstraits
-trait DbTemplate {
-  def execute(query:String)
-  def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T]
-  def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T]
-}
+  class SpringJdbcTemplate extends DbTemplate {
+    override def execute(query:String) = {
+      println(query)
+      underlyingDbTemplate execute query
+    }
+    override def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] =
+    new BufferWrapper[T]{def underlying = underlyingDbTemplate.queryForList(query,params).asInstanceOf[JavaList[T]]}.toList
 
-//Implémentations
-trait SpringJdbcTemplate extends DbTemplate {
-  var dbTemplate:JdbcTemplate = null
-  override def execute(query:String) = {
-    println(query)
-    dbTemplate execute query
+    override def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] =
+    new BufferWrapper[T]{def underlying = underlyingDbTemplate.queryForList(query,params,returnType).asInstanceOf[JavaList[T]]}.toList
   }
-  override def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] =
-  new BufferWrapper[T]{def underlying = dbTemplate.queryForList(query,params).asInstanceOf[JavaList[T]]}.toList
-
-  override def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] = 
-  new BufferWrapper[T]{def underlying = dbTemplate.queryForList(query,params,returnType).asInstanceOf[JavaList[T]]}.toList
 }
+  
 
-trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: DbTemplate=>
+trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: DbTemplateComponent =>
   val tableIntrospection = new Db2TableIntrospection
 
   class Db2TableIntrospection extends TableIntrospection {
@@ -49,7 +44,7 @@ trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: 
 object Main {
 
   // Classe agrégant les composants
-  class DatasetControleur { this: DbTemplate with TableIntrospectionComponent with DatasetCommandComponent =>
+  class DatasetControleur { this: DbTemplateComponent with TableIntrospectionComponent with DatasetCommandComponent =>
     val datasetCommand = new DatasetCommand
     val queryBuilder = new QueryBuilder
   }
@@ -72,9 +67,8 @@ object Main {
     
     
     val dataset = XML loadFile datasetFileName
-    val controleur = new DatasetControleur with SpringJdbcTemplate with Db2TableIntrospectionComponent with DatasetCommandComponent
-    controleur.dbTemplate = (context getBean "DummyDao").asInstanceOf[DummyDao] getJdbcTemplate
-
+    val controleur = new DatasetControleur with SpringJdbcTemplateComponent with Db2TableIntrospectionComponent with DatasetCommandComponent
+    controleur.underlyingDbTemplate=(context getBean "DummyDao").asInstanceOf[DummyDao].getJdbcTemplate
     (args(0) match{
         case "testInsert" => noCommit(context, controleur.datasetCommand insert _)
         case "delete" => controleur.datasetCommand delete _

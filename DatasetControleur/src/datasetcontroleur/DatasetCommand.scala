@@ -4,7 +4,7 @@ import xml._
 import collection.mutable._
 import org.springframework.jdbc.core.JdbcTemplate
   
-trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate =>
+trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplateComponent =>
   import TableIntrospection.TypeParColonneType
   val queryBuilder:QueryBuilder
 
@@ -18,7 +18,7 @@ trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate
         val typesColonne:TypeParColonneType = dicoTable get data.label getOrElse tableIntrospection.memoColonnes(data.label, dicoTable)
         val pairs = for (att:MetaData <-data.attributes if notNullDbValue(att.value toString)) yield (att.key, att.value)
         val query = queryBuilder.buildInsertQuery(data.label, pairs, typesColonne)
-        execute(query)
+        dbTemplate.execute(query)
       }
     }
 
@@ -32,7 +32,7 @@ trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate
         val colonnesPks = dicoPk.get(data.label).getOrElse(tableIntrospection.memoPK(data.label, dicoPk))
         val pairs = for (att:MetaData <-data.attributes if notNullDbValue(att.value toString)) yield (att.key, att.value)
         val query = queryBuilder.buildDeleteQuery(data.label, pairs, colonnesPks, typesColonne)
-        execute(query)
+        dbTemplate.execute(query)
       }
     }
 
