@@ -15,7 +15,7 @@ trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate
       val datas = dataset child
 
       for(data <- datas if notPcData(data.label)){
-        val typesColonne:TypeParColonneType = dicoTable get data.label getOrElse tableIntrospection.memoColonnes(data.label, extractSchemaTable, dicoTable)
+        val typesColonne:TypeParColonneType = dicoTable get data.label getOrElse tableIntrospection.memoColonnes(data.label, dicoTable)
         val pairs = for (att:MetaData <-data.attributes if notNullDbValue(att.value toString)) yield (att.key, att.value)
         val query = queryBuilder.buildInsertQuery(data.label, pairs, typesColonne)
         execute(query)
@@ -28,8 +28,8 @@ trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate
       val revdatas = (dataset child) reverse
 
       for(data <- revdatas if notPcData(data.label)){
-        val typesColonne:TypeParColonneType = dicoTable get data.label getOrElse tableIntrospection.memoColonnes(data.label, extractSchemaTable, dicoTable)
-        val colonnesPks = dicoPk.get(data.label).getOrElse(tableIntrospection.memoPK(data.label, extractSchemaTable, dicoPk))
+        val typesColonne:TypeParColonneType = dicoTable get data.label getOrElse tableIntrospection.memoColonnes(data.label, dicoTable)
+        val colonnesPks = dicoPk.get(data.label).getOrElse(tableIntrospection.memoPK(data.label, dicoPk))
         val pairs = for (att:MetaData <-data.attributes if notNullDbValue(att.value toString)) yield (att.key, att.value)
         val query = queryBuilder.buildDeleteQuery(data.label, pairs, colonnesPks, typesColonne)
         execute(query)
@@ -39,8 +39,5 @@ trait DatasetCommandComponent { this:TableIntrospectionComponent with DbTemplate
     private def notPcData = (_:String) != "#PCDATA"
 
     private def notNullDbValue = (_:String) != "[NULL]"
-
-    /** sépare le schéma et le nom de la table */
-    private def extractSchemaTable(label:String):Array[Object] = (label split '.') map {(_:String).toUpperCase}
   }
 }

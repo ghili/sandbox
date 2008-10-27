@@ -1,27 +1,43 @@
 package datasetcontroleur
 
+import collection.mutable._
+import TableIntrospection.TypeParColonneType
 import org.specs._
 import org.specs.mock._
 import java.util.{List => JavaList}
 
-object Db2TableIntrospectionSpec extends Specification with JMocker {
+/*trait MockDbTemplate extends DbTemplate with Mocker{
+ override def execute(query:String) = record
+ override def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] = recordAndReturn(List())
+ override def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] = recordAndReturn(List())
+ }*/
 
-  //@todo créer un mock avec jmock
-  trait MockDbTemplate extends DbTemplate {
-    def execute(query:String) = ()  
-    def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] = List()
-    def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] = List()
-  }
+trait MockDbTemplate extends DbTemplate with JMocker{
+  var dbTemplate= mock(classOf[DbTemplate])
+  override def execute(query:String) = dbTemplate.execute(query)
+  override def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] = dbTemplate.queryForList(query, params)
+  override def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] = dbTemplate.queryForList(query, params, returnType)
+}
 
-  "le composant db2" should {
-    "definir la requête pour récupérer les types de chaque colonne d'une table" in {
-      val db2Component = new Db2TableIntrospectionComponent with MockDbTemplate
-      db2Component.tableIntrospection.SELECT_TYPE_COLUMNS must notBeNull
+object Db2TableIntrospectionSpec extends Specification with Db2TableIntrospectionComponent with MockDbTemplate {
+
+  "the component for db2" should {
+    "define the query to collect columns' type of a table" in {
+      tableIntrospection.SELECT_TYPE_COLUMNS must notBeNull
     }
     
-  "definir la requête pour récupérer les pks d'une table" in {
-      val db2Component = new Db2TableIntrospectionComponent with MockDbTemplate
-      db2Component.tableIntrospection.SELECT_COLUMNPK must notBeNull
+    "define que query to collect the primary key of a table" in {
+      tableIntrospection.SELECT_COLUMNPK must notBeNull
+    }
+  }
+
+  "calling the method to find column's type component" should {
+    doBefore { dbTemplate = mock(classOf[DbTemplate]) }
+    "call the right query" in {
+      expect {
+        one(dbTemplate).queryForList(tableIntrospection.SELECT_TYPE_COLUMNS, Array("SCHEMA", "TABLE")) willReturn List()
+      }
+      tableIntrospection.memoColonnes("SCHEMA.TABLE", new HashMap[String,TypeParColonneType])
     }
   }
 }

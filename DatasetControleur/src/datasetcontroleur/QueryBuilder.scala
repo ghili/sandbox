@@ -7,14 +7,14 @@ import TableIntrospection.TypeParColonneType
 class QueryBuilder {
 
   def buildInsertQuery(tableName:String, attributes:Iterable[(_,_)], typesColonne:TypeParColonneType):String = {
-    "INSERT INTO "+tableName+" (" + ((attributes.elements.map {(_:(_,_))._1}).mkString(", ")
+    "INSERT INTO "+tableName+" (" + ((attributes.elements.map((_:(_,_))._1)).mkString(", ")
                                  + ") VALUES ("
                                  + (attributes.elements.map {x:(_,_) => format(x._2, x._1.toString, typesColonne)}).mkString(", ") + ")")
   }
 
   def buildDeleteQuery(tableName:String, attributes:Iterable[(_,_)], colonnesPks:List[String], typesColonne:TypeParColonneType):String = {
     // Récupération des attributs XML à garder dans la clause where du delete, c.a.d ceux correspondant aux colonnes formant la pk de la table
-    val pkAttributes = attributes filter {colonnesPks contains (_:(_,_))._1}
+    val pkAttributes = attributes filter (colonnesPks contains (_:(_,_))._1)
     "DELETE FROM "+tableName+" WHERE " + ((pkAttributes.elements.map {x:(_,_) => x._1 +" = "+ format(x._2, x._1.toString, typesColonne)}) mkString " AND ")
   }
 

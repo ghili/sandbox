@@ -1,6 +1,7 @@
 package datasetcontroleur
 
 import xml._
+import io.Source
 import collection.mutable._
 import collection.jcl.BufferWrapper
 import org.springframework.context.support._
@@ -9,7 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.transaction.support._
 import org.springframework.transaction._
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
-import io.Source
 import TableIntrospection.TypeParColonneType
 import java.util.{List=> JavaList}
 
@@ -24,14 +24,14 @@ trait DbTemplate {
 //Implémentations
 trait SpringJdbcTemplate extends DbTemplate {
   var dbTemplate:JdbcTemplate = null
-  def execute(query:String) = {
+  override def execute(query:String) = {
     println(query)
     dbTemplate execute query
   }
-  def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] =
+  override def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] =
   new BufferWrapper[T]{def underlying = dbTemplate.queryForList(query,params).asInstanceOf[JavaList[T]]}.toList
 
-  def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] = 
+  override def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] = 
   new BufferWrapper[T]{def underlying = dbTemplate.queryForList(query,params,returnType).asInstanceOf[JavaList[T]]}.toList
 }
 
