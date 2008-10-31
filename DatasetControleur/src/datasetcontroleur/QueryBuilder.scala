@@ -1,6 +1,5 @@
 package datasetcontroleur
 
-import collection.mutable._
 import org.apache.commons.lang._
 import TableIntrospection.TypeParColonneType
 
@@ -8,8 +7,8 @@ class QueryBuilder {
 
   def buildInsertQuery(tableName:String, attributes:Iterable[(_,_)], typesColonne:TypeParColonneType):String = {
     "INSERT INTO "+tableName+" (" + ((attributes.elements.map((_:(_,_))._1)).mkString(", ")
-                                 + ") VALUES ("
-                                 + (attributes.elements.map {x:(_,_) => format(x._2, x._1.toString, typesColonne)}).mkString(", ") + ")")
+                                     + ") VALUES ("
+                                     + (attributes.elements.map {x:(_,_) => format(x._2, x._1.toString, typesColonne)}).mkString(", ") + ")")
   }
 
   def buildDeleteQuery(tableName:String, attributes:Iterable[(_,_)], colonnesPks:List[String], typesColonne:TypeParColonneType):String = {
@@ -21,11 +20,12 @@ class QueryBuilder {
   /**
    * formatte la valeur en fonction du type de la colonne
    */
-  private def format[A,B,C](paramValeur:A, cleColonne:B, typesColonne:HashMap[B, C]):String = {
+  private def format[A,B,C](paramValeur:A, cleColonne:B, typesColonne:Map[B, C]):String = {
     def quote = "'"+ StringEscapeUtils.escapeSql(_:String) +"'"
     val valeur = paramValeur.toString
-    val typeColonne = typesColonne get cleColonne getOrElse (throw new Exception("!! Colonne non trouvée pour la clé [" + cleColonne + "] !!"))
-    typeColonne match{
+
+    typesColonne get cleColonne getOrElse (throw new Exception("!! Colonne non trouvée pour la clé [" + cleColonne + "] !!"))
+    match{
       case "SMALLINT" | "BIGINT" | "INTEGER" | "DECIMAL" => valeur
       case "BLOB" => "BLOB(" + quote(valeur) + ")"
       case "TIMESTAMP" => quote(if (valeur.size < 11){ valeur + " 00:00:00.0" }else{valeur})

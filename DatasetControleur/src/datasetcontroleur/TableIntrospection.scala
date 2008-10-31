@@ -1,10 +1,11 @@
 package datasetcontroleur
 
 import collection.mutable._
+import collection.immutable
 import org.springframework.jdbc.core._
 import java.util.{Map=> JavaMap}
 
-object TableIntrospection {type TypeParColonneType = HashMap[String,String]}
+object TableIntrospection {type TypeParColonneType = immutable.Map[String,String]}
 
 trait TableIntrospectionComponent { this: DbTemplateComponent =>
   val tableIntrospection:TableIntrospection
@@ -15,14 +16,12 @@ trait TableIntrospectionComponent { this: DbTemplateComponent =>
     val SELECT_COLUMNPK:String
 
     /**
-     *
+     * Recherche les types par colonnes d'une table
      */
-    def memoColonnes(label:String, dicColonne:HashMap[String,TypeParColonneType]):TypeParColonneType = {
-      val typesColonne = new TypeParColonneType
-
-      for(entree:JavaMap[String, String]<- dbTemplate.queryForList(SELECT_TYPE_COLUMNS, extractSchemaTable(label))){
-        typesColonne += entree.get("COLNAME") -> entree.get("TYPENAME")
-      }
+    def memoColonnes(label:String, dicColonne:Map[String,TypeParColonneType]):TypeParColonneType = {
+      val typesColonne = immutable.Map.empty[String,String] ++
+      (dbTemplate.queryForList(SELECT_TYPE_COLUMNS, extractSchemaTable(label)) map { entree:JavaMap[String, String] => (entree.get("COLNAME"), entree.get("TYPENAME"))})
+      
       dicColonne += label -> typesColonne
       typesColonne
     }
@@ -30,7 +29,7 @@ trait TableIntrospectionComponent { this: DbTemplateComponent =>
     /**
      * Recherche les colonnes formant la clé primaire d'une table et garde en cache le résultat
      */
-    def memoPK(label:String, dicColonnePk:HashMap[String,List[String]]):List[String] = {
+    def memoPK(label:String, dicColonnePk:Map[String,List[String]]):List[String] = {
       val resultat = dbTemplate.queryForList(SELECT_COLUMNPK, extractSchemaTable(label), classOf[String])
       if (resultat.isEmpty){
         throw new Exception("pk introuvable")

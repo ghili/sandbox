@@ -38,7 +38,7 @@ object Db2TableIntrospectionSpec extends Specification with MockDb2TableIntrospe
     doBefore { init}
     "call the right query" in {
       expect {
-        one( component.dbTemplate).queryForList( component.tableIntrospection.SELECT_TYPE_COLUMNS, Array("SCHEMA", "TABLE")) willReturn List()
+        one( component.dbTemplate).queryForList(component.tableIntrospection.SELECT_TYPE_COLUMNS, Array("SCHEMA", "TABLE")) willReturn List()
       }
       component.tableIntrospection.memoColonnes("SCHEMA.TABLE", new HashMap[String,TypeParColonneType])
     }

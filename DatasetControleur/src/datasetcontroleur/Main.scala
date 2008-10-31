@@ -12,26 +12,23 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import java.util.{List=> JavaList}
 
-trait SpringJdbcTemplateComponent extends DbTemplateComponent{
-  var underlyingDbTemplate:JdbcTemplate = null
-  val dbTemplate = new SpringJdbcTemplate
-
-  class SpringJdbcTemplate extends DbTemplate {
+trait AbstractSpringJdbcTemplateComponent extends DbTemplateComponent{
+  class SpringJdbcTemplate(jdbcTemplate:JdbcTemplate) extends DbTemplate {
     override def execute(query:String) = {
       println(query)
-      underlyingDbTemplate execute query
+      jdbcTemplate execute query
     }
     override def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] =
-    new BufferWrapper[T]{def underlying = underlyingDbTemplate.queryForList(query,params).asInstanceOf[JavaList[T]]}.toList
+    new BufferWrapper[T]{def underlying = jdbcTemplate.queryForList(query,params).asInstanceOf[JavaList[T]]}.toList
 
     override def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] =
-    new BufferWrapper[T]{def underlying = underlyingDbTemplate.queryForList(query,params,returnType).asInstanceOf[JavaList[T]]}.toList
+    new BufferWrapper[T]{def underlying = jdbcTemplate.queryForList(query,params,returnType).asInstanceOf[JavaList[T]]}.toList
   }
 }
   
 
 trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: DbTemplateComponent =>
-  val tableIntrospection = new Db2TableIntrospection
+  lazy val tableIntrospection = new Db2TableIntrospection
 
   class Db2TableIntrospection extends TableIntrospection {
     val SELECT_TYPE_COLUMNS = "SELECT colName, typeName FROM SYSCAT.COLUMNS WHERE tabSchema = ? AND tabName = ?"
@@ -45,15 +42,14 @@ object Main {
 
   // Classe agrégant les composants
   class DatasetControleur { this: DbTemplateComponent with TableIntrospectionComponent with DatasetCommandComponent =>
-    val datasetCommand = new DatasetCommand
-    val queryBuilder = new QueryBuilder
+    lazy val datasetCommand = new DatasetCommand
+    lazy val queryBuilder = new QueryBuilder
   }
 
   /**
    * @param args the command line arguments
    */
   def main(args: Array[String]) = {
-    val context = new ClassPathXmlApplicationContext(Array[String]("config/config.xml"))
 
     //lecture du fichier de configuration et récupération de la ligne définissant le dataset si le fichier n'est pas donné en argument
     val datasetFileName = if (args.length < 2){
@@ -61,14 +57,17 @@ object Main {
       
       //@todo corriger bug quand le nom du fichier est suivi d'un saut de ligne
       (Source fromFile(file) getLines)
-      .find {(_:String) startsWith "dataset="}
+      .find ((_:String) startsWith "dataset=")
       .getOrElse(throw new Exception("dataset file name not found")).split("=")(1)
     } else args(1)
-    
-    
-    val dataset = XML loadFile datasetFileName
+    lazy val dataset = XML loadFile datasetFileName
+
+    val context = new ClassPathXmlApplicationContext(Array[String]("config/config.xml"))
+    trait SpringJdbcTemplateComponent extends AbstractSpringJdbcTemplateComponent{
+      lazy val dbTemplate = new SpringJdbcTemplate((context getBean "DummyDao").asInstanceOf[DummyDao].getJdbcTemplate)
+    }
     val controleur = new DatasetControleur with SpringJdbcTemplateComponent with Db2TableIntrospectionComponent with DatasetCommandComponent
-    controleur.underlyingDbTemplate=(context getBean "DummyDao").asInstanceOf[DummyDao].getJdbcTemplate
+
     (args(0) match{
         case "testInsert" => noCommit(context, controleur.datasetCommand insert _)
         case "delete" => controleur.datasetCommand delete _
