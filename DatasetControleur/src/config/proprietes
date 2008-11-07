@@ -1,1 +1,4 @@
+//dataset=d:\Galec\workspaces\dev\DomaineFlux\test\com\galec\isis\offre\flux\test\config\dao\dataset\RemonteeEngagementFluxPhysique-dataset.xml
 dataset=d:\Galec\workspaces\dev\DomaineEnvoiCentrale\test\com\galec\isis\offre\pof\test\flux\config\data-TestDaoJdbcFluxRemonteeEngagementIntegrationTableHistorique.xml
+//dataset=d:\Galec\workspaces\dev\DomaineEnvoiCentrale\test\com\galec\isis\offre\pof\test\flux\config\data-TestDaoJdbcFluxRemonteeEngagementControle.xml
+//dataset=d:\Galec\workspaces\dev\DomaineFlux\test\com\galec\isis\offre\flux\test\config\dao\dataset\CatalogueFluxPhysique-dataset.xml

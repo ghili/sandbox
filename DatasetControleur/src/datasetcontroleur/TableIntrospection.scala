@@ -19,7 +19,7 @@ trait TableIntrospectionComponent { this: DbTemplateComponent =>
      * Recherche les types par colonnes d'une table
      */
     def memoColonnes(label:String, dicColonne:Map[String,TypeParColonneType]):TypeParColonneType = {
-      val typesColonne = immutable.Map.empty[String,String] ++
+      val typesColonne = immutable.Map() ++
       (dbTemplate.queryForList(SELECT_TYPE_COLUMNS, extractSchemaTable(label)) map { entree:JavaMap[String, String] => (entree.get("COLNAME"), entree.get("TYPENAME"))})
       
       dicColonne += label -> typesColonne
