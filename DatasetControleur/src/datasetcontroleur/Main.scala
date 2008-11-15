@@ -46,7 +46,7 @@ trait Db2TableIntrospectionComponent extends TableIntrospectionComponent{ this: 
 object Main {
 
     // Classe agrégant les composants
-    class DatasetControleur { this: DbTemplateComponent with TableIntrospectionComponent with DatasetCommandComponent =>
+    class DatasetControleur extends DatasetCommandComponent { this: DbTemplateComponent with TableIntrospectionComponent  =>
         lazy val datasetCommand = new DatasetCommand
         lazy val queryBuilder = new QueryBuilder
     }
@@ -71,7 +71,7 @@ object Main {
         trait SpringJdbcTemplateComponent extends AbstractSpringJdbcTemplateComponent{
             lazy val dbTemplate = new SpringJdbcTemplate((context getBean "DummyDao").asInstanceOf[DummyDao].getJdbcTemplate)
         }
-        val controleur = new DatasetControleur with SpringJdbcTemplateComponent with Db2TableIntrospectionComponent with DatasetCommandComponent
+        val controleur = new DatasetControleur with SpringJdbcTemplateComponent with Db2TableIntrospectionComponent
 
         (args(0) match{
                 case "testInsert" => noCommit(context, controleur.datasetCommand insert _ ) _
