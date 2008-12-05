@@ -4,27 +4,27 @@ CREATE SCHEMA ct;
 SET search_path TO ct, public;
 
 CREATE TABLE support (
-  id                serial PRIMARY KEY,
+  id_support        serial PRIMARY KEY,
   nom               varchar (256) NOT NULL UNIQUE,
   chck              bigint UNIQUE,
-  dtcreation        timestamp UNIQUE
+  date_creation     timestamp UNIQUE
 );
 
 CREATE TABLE dossier (
-  id                serial PRIMARY KEY,
+  id_dossier        serial PRIMARY KEY,
   nom               varchar(256) NOT NULL,
   chemin            text,
-  iddossierparent   integer REFERENCES dossier(id) ON DELETE CASCADE,
-  idsupport         integer REFERENCES support(id) ON DELETE RESTRICT
+  id_dossier_parent bigint REFERENCES dossier(id_dossier) ON DELETE CASCADE,
+  id_support        bigint REFERENCES support(id_support) ON DELETE RESTRICT
 );
 
 -- restrict pour empêcher la suppression si un fichier existe dans le dossier
 CREATE TABLE fichier (
-  id                serial PRIMARY KEY,
+  id_fichier        serial PRIMARY KEY,
   nom               varchar(256) NOT NULL,
   extension         varchar(128),
-  taille            integer,
-  dtfichier         timestamp,
-  iddossier         integer REFERENCES dossier(id) ON DELETE RESTRICT
+  taille            bigint,
+  date_fichier		timestamp,
+  id_dossier        bigint REFERENCES dossier(id_dossier) ON DELETE RESTRICT
 );
 

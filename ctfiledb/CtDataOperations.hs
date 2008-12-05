@@ -15,78 +15,52 @@ import Data.Maybe
 
 logbase = "CtDataOperations"
 
--- | ouvre une connection à la base de donnée puis insère les données contenues
+-- | Ouvre une connection à la base de donnée puis insère les données contenues
 -- dans l'arbre.
-recordFolderTree
-  :: String          -- ^ nom du support à donner
-  -> Tree FolderInfo -- ^ les données à insérer
-  -> Connection      -- ^ connection courante
-  -> IO()
+recordFolderTree  :: String -> Tree FolderInfo -> Connection -> IO()
+recordFolderTree name folderTree c = withTransaction c $ (\c -> do
+  supportid <- insertSupportInfo c name folderTree
+  insertTree c Nothing supportid folderTree)
 
-recordFolderTree name folderTree dbh = do
-  supportid <- insertSupportInfo dbh name folderTree
-  insertTree dbh Nothing supportid folderTree
   
--- | insère les données contenues dans l'arbre.
-insertTree
-  :: Connection           -- ^ connection courante
-  -> Maybe SqlValue       -- ^ id du dossier parent
-  -> SqlValue             -- ^ id du support 
-  -> Tree FolderInfo      -- ^ donnée à insérer 
-  -> IO ()
-
-insertTree dbh parentid supportid (Node folderInfo subForest)= do
-  folderid <- insertFolderInfo dbh parentid supportid folderInfo
-  mapM_ (insertTree dbh folderid supportid) subForest
+-- | Insère les données contenues dans l'arbre.
+insertTree  :: Connection  -> Maybe SqlValue  -> SqlValue  -> Tree FolderInfo  -> IO ()
+insertTree c parentid supportid (Node folderInfo subForest)= do
+  folderid <- insertFolderInfo c parentid supportid folderInfo
+  mapM_ (insertTree c folderid supportid) subForest
 
 -- | insère les informations du dossier et de ses fichiers en base.
-insertFolderInfo
-  :: Connection             -- ^ connection courante
-  -> Maybe SqlValue         -- ^ id du dossier parent
-  -> SqlValue               -- ^ id du support
-  -> FolderInfo             -- ^ infos du dossier
-  -> IO (Maybe SqlValue)    -- ^ id du dossier inséré
-
-insertFolderInfo dbh parentid supportid (FolderInfo folderName folderPath files) = handleSqlError $ do
-  folderid <- getNextSequenceValue dbh "ct.dossier_id_seq" 
-  executeQuery dbh "INSERT INTO ct.dossier (id, nom, chemin, iddossierparent, idsupport) VALUES (?, ?, ?, ?, ?)" [folderid, SqlString folderName, toSql (dropDrive folderPath), toSqlMaybe parentid, supportid]
-  mapM_ (insertFileInfo dbh folderid) files 
+insertFolderInfo :: Connection -> Maybe SqlValue -> SqlValue -> FolderInfo -> IO (Maybe SqlValue)
+insertFolderInfo c iddossierparent supportid (FolderInfo folderName folderPath files) = do
+  folderid <- getNextSequenceValue c "ct.dossier_id_dossier_seq" 
+  st <- prepare c "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_parent, id_support) VALUES (?, ?, ?, ?, ?)"
+  execute st  [folderid, SqlString folderName, toSql (dropDrive folderPath), toSqlMaybe iddossierparent, supportid]
+  -- insertion des fichiers
+  stfile <- prepare c "INSERT INTO ct.fichier (nom, extension, taille, date_fichier, id_dossier) VALUES (?, ?, ?, ?, ?)"
+  executeMany stfile (getFileInfoSqlValues folderid files)
   return $ Just folderid
 
--- | insère les informations relatives à un fichier.
--- La fonction n'insère rien s'il n'y a pas d'accès aux informations du fichier.
-insertFileInfo
-  :: Connection -- ^ connection courante
-  -> SqlValue   -- ^ id du dossier
-  -> FileInfo   -- ^ informations relatives à un fichier
-  -> IO()
-
-insertFileInfo dbh folderid (FileInfo absoluteName fileName size calendar)  = 
-  executeQuery dbh "INSERT INTO ct.fichier (nom, extension, taille, dtfichier, iddossier) VALUES (?, ?, ?, ?, ?)" [SqlString (dropExtension fileName), SqlString (takeExtension fileName), SqlInteger size, toSqlTimeStamp calendar , folderid]
-insertFileInfo dbh folderid (NoAccess msg)                                  = return ()
+-- | transforme les informations sur les fichiers en valeurs sql avec  l'id du dossier
+getFileInfoSqlValues :: SqlValue  -> [FileInfo]  -> [[SqlValue]]
+getFileInfoSqlValues folderid files   = let fileInfoToSql (FileInfo absoluteName fileName size calendar) = [SqlString (dropExtension fileName), SqlString (takeExtension fileName), SqlInteger size, toSqlTimeStamp calendar , folderid]
+                                            gotAccess (NoAccess msg) = False
+                                            gotAccess _ = True
+                                           in map fileInfoToSql (filter gotAccess files)
 
 -- | insère les informations sur le support
-insertSupportInfo
-  :: Connection       -- ^ connection courante
-  -> String           -- ^ nom du support
-  -> Tree FolderInfo  -- ^ arborescence de dossiers
-  -> IO (SqlValue)    -- ^ id du support
-
-insertSupportInfo dbh name tree = do
-  supportid <- getNextSequenceValue dbh "ct.support_id_seq"
-  executeQuery dbh "INSERT INTO ct.support (id, nom, chck, dtcreation) VALUES (?, ?, ?, LOCALTIMESTAMP)" [supportid, SqlString name, SqlInteger(checkFolder tree)]
+insertSupportInfo :: Connection -> String -> Tree FolderInfo -> IO (SqlValue)
+insertSupportInfo c name tree = do
+  supportid <- getNextSequenceValue c "ct.support_id_support_seq"
+  st <- prepare c "INSERT INTO ct.support (id_support, nom, chck, date_creation) VALUES (?, ?, ?, LOCALTIMESTAMP)"
+  execute st [supportid, SqlString name, SqlInteger(checkFolder tree)]
   return supportid
 
-checkFolder
-  :: Tree FolderInfo
-  -> Integer
+checkFolder :: Tree FolderInfo -> Integer
 checkFolder (Node (FolderInfo f p files) subForest) = (foldr ((+) . checkFolder) 0 subForest) + (checkFile files)
 
-checkFile 
-  :: [FileInfo]
-  -> Integer
-checkFile ((FileInfo a f size c):xs)               = size + (checkFile xs)
-checkFile []                          = 0
+checkFile  :: [FileInfo] -> Integer
+checkFile ((FileInfo a f size c):xs) = size + (checkFile xs)
+checkFile []                         = 0
 checkFile _                          = 0
 
 
@@ -115,12 +89,8 @@ instance Show(SearchResult) where
   show (FolderResult support folderpath) = support ++ "@" ++ folderpath
   show SearchResultError                                       = "SearchResultError"
 
--- | TODO state monad
 -- | effectue une recherche sur la base des fichiers
-search
-  :: SearchCriteria -- ^ critères de recherche
-  -> Connection     -- ^ connection courante
-  -> IO ()
+search :: SearchCriteria -> Connection -> IO ()
 search criteria dbh = handleSqlError $ do
   debugM logbase $ show criteria
   putStrLn "fichiers trouves:"
@@ -133,14 +103,14 @@ search criteria dbh = handleSqlError $ do
 searchFolder criteria dbh = handleSqlError $ do
   searchQuery dbh query  criteria populateFolderResult
   where criterion = addKeywordCriteriaWithIgnoreCase [] criteria "d.nom"
-        query = "SELECT s.nom, d.chemin FROM ct.dossier as d JOIN ct.support as s ON (d.idsupport=s.id) WHERE " ++ (mkString criterion " AND ")
+        query = "SELECT s.nom, d.chemin FROM ct.dossier as d JOIN ct.support as s ON (d.id_support=s.id_support) WHERE " ++ (mkString criterion " AND ")
         populateFolderResult (support:(folderpath:_)) = FolderResult {srsupport = fromSql support, srfolderpath= fromSql folderpath}
         populateFolderResult _ = SearchResultError
 
 searchFile criteria  dbh = handleSqlError $ do
   searchQuery dbh query criteria populateFileResult
   where criterion = addSizeCriteria (addKeywordCriteriaWithIgnoreCase [] criteria "f.nom") criteria
-        query = "SELECT f.nom, f.extension, f.taille, f.dtfichier, s.nom, d.chemin FROM ct.fichier as f JOIN ct.dossier as d ON (f.iddossier=d.id) JOIN ct.support as s ON (d.idsupport=s.id) WHERE " ++ (mkString criterion " AND ")
+        query = "SELECT f.nom, f.extension, f.taille, f.date_fichier, s.nom, d.chemin FROM ct.fichier as f JOIN ct.dossier as d ON (f.id_dossier=d.id_dossier) JOIN ct.support as s ON (d.id_support=s.id_support) WHERE " ++ (mkString criterion " AND ")
         populateFileResult (filename:(extension:(size:(dtfichier:(support:(folderpath:_)))))) = FileResult {srfilename = (fromSql filename) ++ fromSql extension, srsize = fromSql size, srdtfichier = fromSql dtfichier,srsupport = fromSql support, srfolderpath= fromSql folderpath}
         populateFileResult _ = SearchResultError
 
