@@ -8,6 +8,7 @@ import System.Locale (defaultTimeLocale)
 import System.Log.Logger
 import System.IO.Error
 import System.IO.Unsafe(unsafePerformIO)
+import System.Directory
 
 logbase = "CtDataAccess"
 
@@ -18,7 +19,8 @@ data DbConfig = DbConfig {
 
 -- | lit le fichier de configuration pour récupérer le nom de la base de donnée et le password
 readDbConfig = DbConfig{dbName = readLines!!0, password = readLines!!1}
-    where readLines = lines $ unsafePerformIO $ readFile "config.properties"
+    where readLines = lines $ unsafePerformIO $ do homedir <- getHomeDirectory 
+                                                   readFile $ homedir ++ ".ctfile"
 
 -- | connecte à la base puis exécute une action
 connectAndDo
