@@ -20,7 +20,7 @@ data DbConfig = DbConfig {
 -- | lit le fichier de configuration pour récupérer le nom de la base de donnée et le password
 readDbConfig = DbConfig{dbName = readLines!!0, password = readLines!!1}
     where readLines = lines $ unsafePerformIO $ do homedir <- getHomeDirectory 
-                                                   readFile $ homedir ++ ".ctfile"
+                                                   readFile $ homedir ++ "/.ctfile"
 
 -- | connecte à la base puis exécute une action
 connectAndDo
