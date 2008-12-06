@@ -130,12 +130,7 @@ mkString (x:xs) sep = x ++ foldl (++) [] (addSep xs sep)
     where addSep (a:as) sep = (sep ++ a) : addSep as sep  
           addSep [] sep = []
 
-searchQuery
-  :: Connection
-  -> String
-  -> SearchCriteria
-  -> ([SqlValue] -> SearchResult)
-  -> IO([SearchResult])
+searchQuery :: Connection -> String -> SearchCriteria -> ([SqlValue] -> SearchResult) -> IO([SearchResult])
 searchQuery dbh query criteria populate = do 
   debugM logbase query
   sth <- prepare dbh query 
