@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap
+  PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+  "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="Dossier">
+    <resultMap id="get-dossier-result" class="ctf.gui.domain.Dossier">
+        <result property="idDossier" column="id_dossier"/>
+        <result property="nom" column="nom"/>
+        <result property="chemin" column="chemin"/>
+        <result property="dossierParent" column="id_dossier_parent" select="getDossier"/>
+        <result property="support" column="id_support" select="getSupport"/>
+    </resultMap>
+
+    <select id="getDossier" parameterClass="long" resultMap="get-dossier-result">
+         SELECT * FROM ct.dossier WHERE id_dossier = #value#
+    </select>
+</sqlMap>

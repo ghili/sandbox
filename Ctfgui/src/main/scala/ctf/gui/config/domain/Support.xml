@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap
+  PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN"
+  "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="Support">
+    <resultMap id="get-support-result" class="ctf.gui.domain.Support">
+        <result property="idSupport" column="id_support"/>
+        <result property="nom" column="nom"/>
+        <result property="chck" column="chck"/>
+        <result property="dateCreation" column="date_creation"/>
+    </resultMap>
+
+    <select id="getSupport" parameterClass="long" resultMap="get-support-result">
+         SELECT * FROM ct.support WHERE id_support = #value#
+    </select>
+</sqlMap>

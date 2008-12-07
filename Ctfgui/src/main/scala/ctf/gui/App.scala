@@ -1,7 +1,7 @@
 package ctf.gui;
 
-import javax.swing._
 import java.awt._
+import javax.swing._
 
 object App extends JFrame {
 

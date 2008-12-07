@@ -24,7 +24,10 @@ object AppRecherche extends Recherche {
     class InputKeyListener extends KeyAdapter{
         override
         def keyPressed(e:KeyEvent) = {
-            println("event="+e)
+            if (e.getKeyCode == 10){
+                println(SqlMapConfig.sqlMapper.queryForList("rechercheFichier", "%"+getInputTextField.getText+"%"))
+            }
+            //println("event="+e)
         }
     }
 }
