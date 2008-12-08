@@ -13,6 +13,6 @@
     </resultMap>
 
     <select id="rechercheFichier" parameterClass="java.lang.String" resultMap="get-fichier-result">
-         SELECT * FROM ct.fichier WHERE nom like #value#
+         SELECT * FROM ct.fichier WHERE nom ilike #value#
     </select>
 </sqlMap>
