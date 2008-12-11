@@ -12,8 +12,13 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import java.util.{List=> JavaList}
 
+object CustomConversions {
+    implicit def convertList[T](javaList:JavaList[_]):List[T] = new BufferWrapper[T]{def underlying = javaList.asInstanceOf[JavaList[T]]}.toList
+}
+
 trait AbstractSpringJdbcTemplateComponent extends DbTemplateComponent{
     class SpringJdbcTemplate(jdbcTemplate:JdbcTemplate) extends DbTemplate {
+        import CustomConversions.convertList
 
         override
         def execute(query:String) = {
@@ -23,11 +28,11 @@ trait AbstractSpringJdbcTemplateComponent extends DbTemplateComponent{
 
         override
         def queryForList[T <: AnyRef](query:String, params:Array[Object]):List[T] =
-        new BufferWrapper[T]{def underlying = jdbcTemplate.queryForList(query,params).asInstanceOf[JavaList[T]]}.toList
+        jdbcTemplate.queryForList(query,params)
 
         override
         def queryForList[T <: AnyRef](query:String, params:Array[Object], returnType:Class[_]):List[T] =
-        new BufferWrapper[T]{def underlying = jdbcTemplate.queryForList(query,params,returnType).asInstanceOf[JavaList[T]]}.toList
+        jdbcTemplate.queryForList(query,params,returnType)
     }
 }
   
