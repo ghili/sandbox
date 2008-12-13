@@ -22,6 +22,7 @@ data BrowseState = BrowseState {
       b_iddossier:: IO (Maybe SqlValue),
       b_idsupport:: IO SqlValue,
       nom::String,
+      rootPath::String,
       b_chemin::IO String,
       c::Connection
 }
@@ -61,7 +62,8 @@ recordSupport chemin label = do
                            st <- prepare (c s) "INSERT INTO ct.support (id_support, nom, chck, date_creation) VALUES (?, ?, ?, LOCALTIMESTAMP)"
                            execute st [supportid, SqlString label, SqlInteger( 0 )]
                            return supportid
-  put s{b_idsupport = supportId}
+  put s{b_idsupport = supportId, rootPath = chemin}
+  recordFolder "/"
 
 recordFolder :: String -> State BrowseState ()
 recordFolder nomDossier = do
@@ -71,7 +73,7 @@ recordFolder nomDossier = do
                            idDossier <- b_iddossier s
                            chemin <- b_chemin s
                            supportId <- b_idsupport s
-                           execute st [folderid, SqlString nomDossier, toSql (dropDrive chemin), toSqlMaybe idDossier, supportId]
+                           execute st [folderid, SqlString nomDossier, toSql (dropRootPath chemin (rootPath s)), toSqlMaybe idDossier, supportId]
                            return $ Just folderid
   put s{b_iddossier = idDossier, b_chemin = msum [(b_chemin s), return "/", return nomDossier]}
   tuple <- return $ do chemin <- b_chemin s
@@ -83,67 +85,9 @@ recordFolder nomDossier = do
                        return (files,dirs)
   recordFileNodes ((liftM fst) tuple)
   sequence_ $ map recordFolder (snd $ unsafePerformIO tuple)
-                    
+  where dropRootPath path rootPath = drop (length rootPath) path                     
 
---  tuple >>= (liftM (recordFileNodes . fst))
---  mapM_ recordFolder (snd tuple)
-
-{--                     
-                         where normalizeContent contents = 
-                            foldr (\xn z -> 
-                                       let path = normalise $ combine fpath xn
-                                       in do
-                                         isDir <- doesDirectoryExist path
-                                                  tuple <- z
-                                                           if isDir 
-                                                           then do info <- browseFolder xn path rootPath
-                                                                           return (fst tuple , info:(snd tuple))
-                                                           else do info <- getFileInfo xn path
-                                                                           return (info:(fst tuple),snd tuple))
-                                      (return ([],[])) (dropWhile (\x -> x == "." || x == ".." ) contents)
-                        dropRootPath path rootPath = drop (length rootPath) path 
-
-
-
-recordFolder :: BrowseState -> State BrowseState Integer
-recordFolder bs@(BrowseState iddossierparent idsupport nomDossier chemin c) = do
-  b <- put bs{b_iddossier = record bs, nom = nomDossier, chemin = chemin}
-  return $ b_iddossier b
-  where recordf (BrowseState iddossierparent idsupport nomDossier chemin c) = do
-    folderid <- getNextSequenceValue c "ct.dossier_id_dossier_seq" 
-    st <- prepare c "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_parent, id_support) VALUES (?, ?, ?, ?, ?)"
-    execute st [folderid, SqlString nomDossier, toSql (dropDrive chemin), toSqlMaybe iddossierparent, idsupport]
-    return folderid
-
-
-
-bFolder :: String -> State Integer
-bFolder name = do
-  b <- get
-  contents <- getDirectoryContents $ chemin b 
-  infos <- getFilesFolders contents
-  return Node { rootLabel = FolderInfo {folderName = fname, folderPath = dropRootPath fpath rootPath, files = fst infos}, subForest =  snd infos}
-  where getFilesFolders contents =
-          foldr (\xn z -> 
-                  let path = normalise $ combine fpath xn
-                  in do
-                    isDir <- doesDirectoryExist path
-                    tuple <- z
-                    if isDir 
-                      then do info <- browseFolder xn path rootPath
-                              return (fst tuple , info:(snd tuple))
-                      else do info <- getFileInfo xn path
-                              return (info:(fst tuple),snd tuple))
-                (return ([],[])) (dropWhile (\x -> x == "." || x == ".." ) contents)
-        dropRootPath path rootPath = drop (length rootPath) path 
-  
-
-  
-
-
-
-
-
+{--   
 instance Show (FileInfo) where
     show (FileInfo absoluteName fileName size calendar) =
                         show fileName ++ "\t" ++ show size ++ " bytes" ++ "\t" 
@@ -153,31 +97,6 @@ instance Show (FileInfo) where
 instance Show (FolderInfo) where
     show (FolderInfo folderName folderPath files) = 
                         "\n" ++ show folderName ++ " :\n" ++ (foldr ((++) . (++ "\n") . show) "" files)
-
--- | construit un arbre à partir de l'arborescence du système de fichiers
--- en dessous du dossier renseigné
-browseFolder 
-  :: String -- ^ le nom du répertoire à parcourir
-  -> String -- ^ le chemin relatif du répertoire à parcourir
-  -> String -- ^ le chemin du répertoire racine
-  -> IO (Tree FolderInfo) -- ^ l'arbre retourné
-browseFolder fname fpath rootPath = do
-  contents <- getDirectoryContents fpath 
-  infos <- getFilesFolders contents
-  return Node { rootLabel = FolderInfo {folderName = fname, folderPath = dropRootPath fpath rootPath, files = fst infos}, subForest =  snd infos}
-  where getFilesFolders contents =
-          foldr (\xn z -> 
-                  let path = normalise $ combine fpath xn
-                  in do
-                    isDir <- doesDirectoryExist path
-                    tuple <- z
-                    if isDir 
-                      then do info <- browseFolder xn path rootPath
-                              return (fst tuple , info:(snd tuple))
-                      else do info <- getFileInfo xn path
-                              return (info:(fst tuple),snd tuple))
-                (return ([],[])) (dropWhile (\x -> x == "." || x == ".." ) contents)
-        dropRootPath path rootPath = drop (length rootPath) path 
 
 browseFolder2 :: String -> String -> IO (Tree FolderInfo)
 browseFolder2 fname fpath = browseFolder fname fpath fpath
