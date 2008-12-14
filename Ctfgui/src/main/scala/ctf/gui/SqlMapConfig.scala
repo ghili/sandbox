@@ -4,6 +4,8 @@ package ctf.gui
 
 import com.ibatis.sqlmap.client._
 import com.ibatis.common.resources.Resources
+import java.util.{List => JavaList}
+import collection.jcl.BufferWrapper
 
 object SqlMapConfig {
   var sqlMapper:SqlMapClient = _
@@ -15,5 +17,9 @@ object SqlMapConfig {
         reader.close
      } catch { case e:Exception => e.printStackTrace()
      }
+}
+
+object CustomConversions {
+    implicit def convertList[T](javaList:JavaList[_]):List[T] = new BufferWrapper[T]{def underlying = javaList.asInstanceOf[JavaList[T]]}.toList
 }
 
