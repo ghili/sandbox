@@ -14,4 +14,8 @@
     <select id="getDossier" parameterClass="long" resultMap="get-dossier-result">
          SELECT * FROM ct.dossier WHERE id_dossier = #value#
     </select>
+
+    <select id="rechercheDossierParSupport" parameterClass="long" resultMap="get-dossier-result">
+         SELECT * FROM ct.dossier WHERE id_support = #value#
+    </select>
 </sqlMap>

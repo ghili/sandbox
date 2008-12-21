@@ -13,4 +13,8 @@
     <select id="getSupport" parameterClass="long" resultMap="get-support-result">
          SELECT * FROM ct.support WHERE id_support = #value#
     </select>
+
+    <select id="rechercheToutSupport" resultMap="get-support-result">
+         SELECT * FROM ct.support
+    </select>
 </sqlMap>

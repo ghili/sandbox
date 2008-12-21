@@ -15,4 +15,8 @@
     <select id="rechercheFichier" parameterClass="java.lang.String" resultMap="get-fichier-result">
          SELECT * FROM ct.fichier WHERE nom ilike #value#
     </select>
+
+    <select id="rechercheFichierParDossier" parameterClass="long" resultMap="get-fichier-result">
+         SELECT * FROM ct.fichier WHERE id_dossier = #value#
+    </select>
 </sqlMap>

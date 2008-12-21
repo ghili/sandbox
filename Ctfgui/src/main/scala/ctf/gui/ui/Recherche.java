@@ -166,4 +166,12 @@ public class Recherche extends javax.swing.JFrame {
     public javax.swing.JList getResultList(){
         return jList1;
     }
+
+    public javax.swing.JList getFileList(){
+        return jList2;
+    }
+
+    public javax.swing.JTree getSupportTree(){
+        return jTree1;
+    }
 }

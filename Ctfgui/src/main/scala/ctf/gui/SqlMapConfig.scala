@@ -10,7 +10,6 @@ import collection.jcl.BufferWrapper
 object SqlMapConfig {
   var sqlMapper:SqlMapClient = _
 
-
     try {
         val reader = Resources.getResourceAsReader ("ctf/gui/config/SqlMapConfig.xml")
         sqlMapper = SqlMapClientBuilder.buildSqlMapClient(reader)
