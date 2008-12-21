@@ -16,6 +16,6 @@
     </select>
 
     <select id="rechercheDossierParSupport" parameterClass="long" resultMap="get-dossier-result">
-         SELECT * FROM ct.dossier WHERE id_support = #value#
+         SELECT * FROM ct.dossier WHERE id_support = #value# order by id_dossier
     </select>
 </sqlMap>

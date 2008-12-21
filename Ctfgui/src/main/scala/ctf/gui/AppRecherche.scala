@@ -2,6 +2,7 @@ package ctf.gui
 
 import actors._
 import actors.Actor._
+import collection.immutable
 import collection.jcl.BufferWrapper
 import java.awt.event._
 import javax.swing._
@@ -105,9 +106,18 @@ object AppRecherche extends Recherche {
     }
 
     def addDossierToNode(dossiers:List[Dossier], supportNode:DefaultMutableTreeNode){
+        var nodes = immutable.Map[Long, DefaultMutableTreeNode]()
         for(dossier <- dossiers){
+
+            val parentNode= if (dossier.dossierParent == null){
+                supportNode
+            }else{
+                val idDossierParent = dossier.dossierParent.idDossier
+                nodes.get(idDossierParent).getOrElse(supportNode)
+            }
             val node = new DefaultMutableTreeNode(DossierDisplayItem(dossier))
-            supportNode add node
+            parentNode add node
+            nodes += dossier.idDossier -> node
         }
     }
     
