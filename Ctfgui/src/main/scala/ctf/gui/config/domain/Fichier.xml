@@ -13,7 +13,7 @@
     </resultMap>
 
     <select id="rechercheFichier" parameterClass="java.lang.String" resultMap="get-fichier-result">
-         SELECT * FROM ct.fichier WHERE nom ilike #value#
+         SELECT * FROM ct.fichier WHERE nom ilike #value# order by upper(nom)
     </select>
 
     <select id="rechercheFichierParDossier" parameterClass="long" resultMap="get-fichier-result">

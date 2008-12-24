@@ -17,7 +17,7 @@ class SupportTreeEventListener(view:CtfView,controller:UIController) extends Tre
     private def refreshSupportOnPath(path:TreePath) = {
         val node = path.getLastPathComponent.asInstanceOf[DefaultMutableTreeNode]
         node.getUserObject match {
-            case SupportDisplayItem(support) => controller.searchCoordinator ! LoadSupport(support.idSupport, node)
+            case SupportDisplayItem(support) => controller.searchCoordinator ! DossierParSupportSearchCriteria(support.idSupport, node)
             case DossierDisplayItem(dossier) => controller.searchCoordinator ! FichierParDossierCriteria(dossier.idDossier)
             case _ =>
         }

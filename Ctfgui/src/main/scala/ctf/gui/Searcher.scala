@@ -11,9 +11,12 @@ class Searcher {
     def fileSearcher: Actor = actor {
         loop{
             react{
-                case FichierSearchCriteria(name) =>
-                    println("criteria=" + name)
-                    sender ! FichierResult(findFichier(name))
+                case source:Any =>
+                    source match {
+                        case FichierSearchCriteria(name) =>
+                            println("criteria=" + name)
+                            sender ! FichierResult(findFichier(name),source)
+                    }
             }
         }
     }
@@ -21,30 +24,33 @@ class Searcher {
     def basicSearcher: Actor = actor {
         loop{
             react{
-                case SearchAllSupport =>
-                    println("recherche support...")
-                    sender ! SupportResult(findAllSupport)
-                case DossierParSupportSearchCriteria(idSupport) =>
-                    println("recherche dossier pour support "+idSupport+"...")
-                    sender ! DossierResult(findDossierParSupport(idSupport))
-                case FichierParDossierCriteria(idDossier) =>
-                    println("recherche fichier pour dossier "+idDossier+"...")
-                    sender ! FichierResult(findFichierParDossier(idDossier))
+                case source:Any =>
+                    source match {
+                        case SearchAllSupport =>
+                            println("recherche support...")
+                            sender ! SupportResult(findAllSupport,source)
+                        case DossierParSupportSearchCriteria(idSupport,node) =>
+                            println("recherche dossier pour support "+idSupport+"...")
+                            sender ! DossierResult(findDossierParSupport(idSupport),source)
+                        case FichierParDossierCriteria(idDossier) =>
+                            println("recherche fichier pour dossier "+idDossier+"...")
+                            sender ! FichierResult(findFichierParDossier(idDossier),source)
+                    }
             }
         }
     }
 
     private def findFichier(name:String):List[Fichier]=
-        SqlMapConfig.sqlMapper.queryForList("rechercheFichier", "%"+name+"%")
+    SqlMapConfig.sqlMapper.queryForList("rechercheFichier", "%"+name+"%")
 
     private def findFichierParDossier(idDossier:Long):List[Fichier]=
-        SqlMapConfig.sqlMapper.queryForList("rechercheFichierParDossier", idDossier)
+    SqlMapConfig.sqlMapper.queryForList("rechercheFichierParDossier", idDossier)
 
     private def findAllSupport:List[Support]=
-        SqlMapConfig.sqlMapper.queryForList("rechercheToutSupport", None)
+    SqlMapConfig.sqlMapper.queryForList("rechercheToutSupport", None)
 
     private def findDossierParSupport(idSupport:Long):List[Dossier]=
-        SqlMapConfig.sqlMapper.queryForList("rechercheDossierParSupport", idSupport)
+    SqlMapConfig.sqlMapper.queryForList("rechercheDossierParSupport", idSupport)
 }
 
 

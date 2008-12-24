@@ -12,43 +12,30 @@ class UIController {
     var finderAction:FinderAction = _
 
     val searcher = new Searcher
-    var nActor = 0
 
     def searchCoordinator:Actor = actor{
-        nActor += 1
-        println("actor"+nActor)
         loop{
             react{
                 case fichierCriteria:FichierSearchCriteria =>
                     searcher.fileSearcher ! fichierCriteria
                 case SearchAllSupport =>
                     searcher.basicSearcher ! SearchAllSupport
-                case LoadSupport(idSupport,node) =>
-                    searcher.basicSearcher ! DossierParSupportSearchCriteria(idSupport)
-                    println("waiting"+nActor)
-                    receiveWithin(50000) {
-                        case dossierResult:DossierResult =>
-                            println(dossierResult.dossiers.size + " dossiers found")
-                            browserAction.addDossierToNode(dossierResult.dossiers,node)
-                    }
-                    println("abandonned"+nActor)
+                case DossierParSupportSearchCriteria(idSupport,node) =>
+                    searcher.basicSearcher ! DossierParSupportSearchCriteria(idSupport,node)
                 case fichierParDossierCriteria:FichierParDossierCriteria =>
                     searcher.basicSearcher ! fichierParDossierCriteria
-                    println("waiting"+nActor)
-                    receiveWithin(50000) {
-                        case fichierResult:FichierResult =>
-                            println(fichierResult.fichiers.size + " fichiers found")
+                case result:ResultList =>
+                    println(result.results.size + " results for "+result.source+" found")
+                    result match {
+                        case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierSearchCriteria] =>
+                            finderAction.loadResultFileList(fichierResult.fichiers)
+                        case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierParDossierCriteria] =>
                             browserAction.loadFileList(fichierResult.fichiers)
+                        case supportResult:SupportResult =>
+                            browserAction.loadSupportTree(supportResult.supports)
+                        case dossierResult:DossierResult =>
+                            browserAction.addDossierToNode(dossierResult.dossiers,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
                     }
-                    println("abandonned"+nActor)
-                case fichierResult:FichierResult =>
-                    println(fichierResult.fichiers.size + " files found")
-                    finderAction.loadResultFileList(fichierResult.fichiers)
-                    exit('stop)
-                case supportResult:SupportResult =>
-                    println(supportResult.supports.size + " supports found")
-                    browserAction.loadSupportTree(supportResult.supports)
-
             }
         }
     }
