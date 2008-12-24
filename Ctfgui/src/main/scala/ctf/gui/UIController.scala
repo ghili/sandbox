@@ -4,6 +4,7 @@ package ctf.gui
 import actors._
 import actors.Actor._
 import ctf.gui.ui._
+import CtrlMessages._
 
 class UIController {
 

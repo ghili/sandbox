@@ -3,6 +3,7 @@ package ctf.gui
 import scala.actors._
 import scala.actors.Actor._
 import domain._
+import CtrlMessages._
 
 class Searcher {
     import CustomConversions.convertList

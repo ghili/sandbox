@@ -5,7 +5,7 @@ import ui._
 
 object AppRecherche  {
 
-    def main(args : Array[String]) = {
+    def launch = {
         val controller = new UIController
         val view = new CtfView(controller)
         controller.browserAction = new BrowserAction(view)
@@ -17,6 +17,10 @@ object AppRecherche  {
                     view.setVisible(true)
                 }
             })
+    }
+
+    def main(args : Array[String]) = {
+        launch
     }
 
 }

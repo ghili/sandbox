@@ -5,6 +5,7 @@ import java.awt.event._
 import javax.swing._
 import javax.swing.event._
 import javax.swing.tree._
+import ctf.gui.CtrlMessages._
 
 class CtfView(controller:UIController) extends Recherche {
 
