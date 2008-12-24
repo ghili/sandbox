@@ -46,16 +46,4 @@ class Searcher {
         SqlMapConfig.sqlMapper.queryForList("rechercheDossierParSupport", idSupport)
 }
 
-case class FichierSearchCriteria(name:String)
 
-case class FichierParDossierCriteria(idDossier:Long)
-
-case class DossierParSupportSearchCriteria(idSupport:Long)
-
-case class SearchAllSupport
-
-case class SupportResult(supports:List[Support])
-
-case class FichierResult(fichiers:List[Fichier])
-
-case class DossierResult(dossiers:List[Dossier])
