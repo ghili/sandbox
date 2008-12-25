@@ -16,16 +16,11 @@ class UIController {
     def searchCoordinator:Actor = actor{
         loop{
             react{
-                case fichierCriteria:FichierSearchCriteria =>
-                    searcher.fileSearcher ! fichierCriteria
-                case SearchAllSupport =>
-                    searcher.basicSearcher ! SearchAllSupport
-                case DossierParSupportSearchCriteria(idSupport,node) =>
-                    searcher.basicSearcher ! DossierParSupportSearchCriteria(idSupport,node)
-                case fichierParDossierCriteria:FichierParDossierCriteria =>
-                    searcher.basicSearcher ! fichierParDossierCriteria
-                case result:ResultList =>
-                    println(result.results.size + " results for "+result.source+" found")
+                case criteria:CriteriaMessage =>
+                    println("searchCoordinator ("+self+") -> "+criteria)
+                    searcher.searcher ! criteria
+                case result:ResultListMessage =>
+                    println("searchCoordinator ("+self+") <- "+result.results.size + " results for "+result.source+" found")
                     result match {
                         case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierSearchCriteria] =>
                             finderAction.loadResultFileList(fichierResult.fichiers)
@@ -35,7 +30,9 @@ class UIController {
                             browserAction.loadSupportTree(supportResult.supports)
                         case dossierResult:DossierResult =>
                             browserAction.addDossierToNode(dossierResult.dossiers,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
+                        case _ => throw new Exception("unknown result list "+ result)
                     }
+                 case message:Any => throw new Exception("unknown message "+message)
             }
         }
     }

@@ -20,7 +20,7 @@ class CtfView(controller:UIController) extends Recherche {
 
     //content initialization
 
-    controller.searchCoordinator ! SearchAllSupport
+    controller.searchCoordinator ! SearchAllSupport()
 }
 
     

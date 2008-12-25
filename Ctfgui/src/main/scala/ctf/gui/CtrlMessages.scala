@@ -9,15 +9,15 @@ import javax.swing.tree._
 
 
 object CtrlMessages {
-    case class FichierSearchCriteria(name:String)
-    case class FichierParDossierCriteria(idDossier:Long)
-    case class DossierParSupportSearchCriteria(idSupport:Long, node:DefaultMutableTreeNode)
-    
-    case class SearchAllSupport
+    abstract case class CriteriaMessage
+    case class FichierSearchCriteria(name:String) extends CriteriaMessage
+    case class FichierParDossierCriteria(idDossier:Long) extends CriteriaMessage
+    case class DossierParSupportSearchCriteria(idSupport:Long, node:DefaultMutableTreeNode) extends CriteriaMessage
+    case class SearchAllSupport extends CriteriaMessage
 
-    case class ResultList(results:List[_], source:Any)
-    case class SupportResult(supports:List[Support], override val source:Any) extends ResultList(supports, source)
-    case class FichierResult(fichiers:List[Fichier], override val source:Any) extends ResultList(fichiers, source)
-    case class DossierResult(dossiers:List[Dossier], override val source:Any) extends ResultList(dossiers, source)
+    abstract case class ResultListMessage(results:List[_], source:Any)
+    case class SupportResult(supports:List[Support], override val source:Any) extends ResultListMessage(supports, source)
+    case class FichierResult(fichiers:List[Fichier], override val source:Any) extends ResultListMessage(fichiers, source)
+    case class DossierResult(dossiers:List[Dossier], override val source:Any) extends ResultListMessage(dossiers, source)
 
 }
