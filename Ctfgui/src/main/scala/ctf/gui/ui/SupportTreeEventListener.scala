@@ -4,7 +4,8 @@ import java.awt.event._
 import javax.swing._
 import javax.swing.event._
 import javax.swing.tree._
-import ctf.gui.CtrlMessages._
+import ctf.gui.DossierParSupportSearchCriteria
+import ctf.gui.FichierParDossierCriteria
 
 class SupportTreeEventListener(view:CtfView,controller:UIController) extends TreeSelectionListener with TreeWillExpandListener{
 
@@ -19,7 +20,7 @@ class SupportTreeEventListener(view:CtfView,controller:UIController) extends Tre
         node.getUserObject match {
             case SupportDisplayItem(support) => controller.searchCoordinator ! DossierParSupportSearchCriteria(support.idSupport, node)
             case DossierDisplayItem(dossier) => controller.searchCoordinator ! FichierParDossierCriteria(dossier.idDossier)
-            case _ =>
+            case _ => throw new Exception("unknown node")
         }
     }
 }

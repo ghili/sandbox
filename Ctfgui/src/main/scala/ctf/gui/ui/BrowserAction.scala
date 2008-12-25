@@ -37,20 +37,24 @@ class BrowserAction(view:CtfView) {
     /**
      *
      */
-    def addDossierToNode(dossiers:List[Dossier], supportNode:DefaultMutableTreeNode){
-        var nodes = immutable.Map[Long, DefaultMutableTreeNode]()
-        for(dossier <- dossiers){
+    def addDossierToNode(dossiers:List[Dossier], rootNode:DefaultMutableTreeNode):Long = {
+        val dossierRacine = dossiers.find {dossier:Dossier => dossier.dossierParent == null}
+        .getOrElse(throw new Exception("dossier racine introuvable"))
 
-            val parentNode= if (dossier.dossierParent == null){
-                println("dossierParent est null")
-                supportNode
-            }else{
-                val idDossierParent = dossier.dossierParent.idDossier
-                nodes.get(idDossierParent) getOrElse supportNode
-            }
+        rootNode.getUserObject match {
+            case suportDisplayItem:SupportDisplayItem => rootNode.setUserObject(DossierRacineDisplayItem(dossierRacine,suportDisplayItem.support))
+            case _ => 
+        }
+
+        var nodes = immutable.Map[Long, DefaultMutableTreeNode](dossierRacine.idDossier -> rootNode)
+        for(dossier <- dossiers if (dossier.dossierParent != null)){
+            val parentNode = nodes.get(dossier.dossierParent.idDossier)
+            .getOrElse(throw new Exception("dossier parent introuvable " + dossier.dossierParent.idDossier))
+            
             val node = new DefaultMutableTreeNode(DossierDisplayItem(dossier))
             parentNode add node
             nodes += dossier.idDossier -> node
         }
+        dossierRacine.idDossier
     }
 }
