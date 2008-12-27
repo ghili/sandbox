@@ -1,6 +1,9 @@
 package ctf.gui.ui
 
 import ctf.gui.domain._
+import scala.swing.Component._
+import scala.swing._
+import scala.swing.event._
 import java.awt.event._
 import javax.swing._
 import javax.swing.event._
@@ -11,7 +14,14 @@ class CtfView(controller:UIController) extends Recherche {
 
     //listeners initialization
 
-    getInputTextField.addKeyListener(new SearchFieldInputKeyListener(this,controller))
+    val searchButton = new Button{
+        override lazy val peer = getSearchButton
+        reactions += {
+            case ButtonClicked(_) => controller.searchCoordinator ! FichierSearchCriteria(getSearchJTextField().getText)
+        }
+    }
+
+    //getRefreshButton.addActionListener()
     
     getSupportTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION)
     val supportTreeEventListener = new SupportTreeEventListener(this,controller)

@@ -28,8 +28,7 @@ class BrowserAction(view:CtfView) {
     def loadSupportTree(supports:List[Support]) = {
         val rootNode = new DefaultMutableTreeNode("supports");
         for(support <- supports){
-            val node = new DefaultMutableTreeNode(SupportDisplayItem(support))
-            rootNode add node
+            rootNode add (new DefaultMutableTreeNode(SupportDisplayItem(support)))
         }
         view.getSupportTree.setModel(new DefaultTreeModel(rootNode))
     }
@@ -38,12 +37,12 @@ class BrowserAction(view:CtfView) {
      *
      */
     def addDossierToNode(dossiers:List[Dossier], rootNode:DefaultMutableTreeNode):Long = {
-        val dossierRacine = dossiers.find {dossier:Dossier => dossier.dossierParent == null}
+        val dossierRacine = dossiers.find {(_:Dossier).dossierParent == null}
         .getOrElse(throw new Exception("dossier racine introuvable"))
 
         rootNode.getUserObject match {
-            case suportDisplayItem:SupportDisplayItem => rootNode.setUserObject(DossierRacineDisplayItem(dossierRacine,suportDisplayItem.support))
-            case _ => 
+            case SupportDisplayItem(support) => rootNode.setUserObject(DossierRacineDisplayItem(dossierRacine,support))
+            case _ =>
         }
 
         var nodes = immutable.Map[Long, DefaultMutableTreeNode](dossierRacine.idDossier -> rootNode)
