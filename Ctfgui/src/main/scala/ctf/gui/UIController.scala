@@ -3,13 +3,13 @@ package ctf.gui
 
 import actors._
 import actors.Actor._
-import ctf.gui.ui._
+import ui._
 
 class UIController {
     import Searcher._
 
     var browserAction:BrowserAction = _
-    var finderAction:FinderAction = _
+    var finderView:FinderView = _
 
     def searchCoordinator:Actor = actor{
         loop{
@@ -20,8 +20,8 @@ class UIController {
                 case result:ResultListMessage =>
                     println("searchCoordinator ("+self+") <- "+result.results.size + " results for "+result.source+" found")
                     result match {
-                        case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierSearchCriteria] =>
-                            finderAction.loadResultFileList(fichierResult.fichiers)
+                        case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FinderCriteria] =>
+                            finderView.loadResultFileList(fichierResult.fichiers)
                         case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierParDossierCriteria] =>
                             browserAction.loadFileList(fichierResult.fichiers)
                         case supportResult:SupportResult =>

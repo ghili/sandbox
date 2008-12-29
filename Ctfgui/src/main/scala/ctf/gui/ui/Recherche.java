@@ -126,6 +126,7 @@ public class Recherche extends javax.swing.JFrame {
 
         jScrollPane2.setViewportView(jTree1);
 
+        jButton2.setFont(new java.awt.Font("Dialog", 1, 8)); // NOI18N
         jButton2.setText("refresh");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
@@ -235,11 +236,11 @@ public class Recherche extends javax.swing.JFrame {
     private javax.swing.JTree jTree1;
     // End of variables declaration//GEN-END:variables
 
-    public javax.swing.JButton getSearchButton(){
+    public javax.swing.JButton getSearchJButton(){
         return jButton1;
     }
 
-    public javax.swing.JButton getRefreshButton(){
+    public javax.swing.JButton getRefreshJButton(){
         return jButton2;
     }
 

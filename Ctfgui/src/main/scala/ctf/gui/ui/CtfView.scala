@@ -15,9 +15,17 @@ class CtfView(controller:UIController) extends Recherche {
     //listeners initialization
 
     val searchButton = new Button{
-        override lazy val peer = getSearchButton
+        override lazy val peer = getSearchJButton
         reactions += {
-            case ButtonClicked(_) => controller.searchCoordinator ! FichierSearchCriteria(getSearchJTextField().getText)
+            case ButtonClicked(_) =>
+                controller.searchCoordinator ! FinderCriteriaBuilder.parse(getSearchJTextField().getText,FinderCriteriaBuilder.searchCriteria)
+        }
+    }
+
+    val refreshButton = new Button{
+        override lazy val peer = getRefreshJButton
+        reactions += {
+            case ButtonClicked(_) => initSupport
         }
     }
 
@@ -30,12 +38,17 @@ class CtfView(controller:UIController) extends Recherche {
 
     //content initialization
 
-    controller.searchCoordinator ! SearchAllSupport()
+    initSupport
+
+    def initSupport = controller.searchCoordinator ! SearchAllSupport()
 }
 
-    
+
 case class DisplayItem
-case class FichierDisplayItem(fichier:Fichier) extends DisplayItem { override def toString = fichier.nom}
+case class FichierDisplayItem(fichier:Fichier) extends DisplayItem { override def toString = fichier.nom + fichier.extension }
+case class FichierSearchResultDisplayItem(fichier:Fichier) extends DisplayItem {
+    override def toString = fichier.nom + fichier.extension + "             (" + fichier.taille +" bytes, "+ fichier.dossier.support.nom+"@/"+fichier.dossier.chemin+")"
+}
 case class SupportDisplayItem(support:Support) extends DisplayItem { override def toString = support.nom}
 case class DossierDisplayItem(dossier:Dossier) extends DisplayItem { override def toString = dossier.nom}
 case class DossierRacineDisplayItem(override val dossier:Dossier, support:Support) extends DossierDisplayItem(dossier) {

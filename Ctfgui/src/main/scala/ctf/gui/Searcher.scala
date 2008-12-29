@@ -13,7 +13,7 @@ object Searcher {
                 case source:Any =>
                     println("searcher (" + self + ") <- "+source)
                     source match {
-                        case FichierSearchCriteria(name) =>
+                        case FinderCriteria(name,options) =>
                             sender ! FichierResult(findFichier(name),source)
                         case SearchAllSupport() =>
                             sender ! SupportResult(findAllSupport,source)

@@ -9,7 +9,7 @@ object AppRecherche  {
         val controller = new UIController
         val view = new CtfView(controller)
         controller.browserAction = new BrowserAction(view)
-        controller.finderAction = new FinderAction(view)
+        controller.finderView = new FinderView(view)
 
 
         java.awt.EventQueue.invokeLater(new Runnable() {

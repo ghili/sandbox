@@ -9,7 +9,7 @@
         <result property="extension" column="extension"/>
         <result property="taille" column="taille"/>
         <result property="dateFichier" column="date_fichier"/>
-        <!--result property="dossier" column="id_dossier" select="getDossier"/-->
+        <result property="dossier" column="id_dossier" select="getDossier"/>
     </resultMap>
 
     <select id="rechercheFichier" parameterClass="java.lang.String" resultMap="get-fichier-result">
