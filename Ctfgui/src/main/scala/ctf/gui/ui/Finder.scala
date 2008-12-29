@@ -21,26 +21,26 @@ import ctf.gui._
 object FinderCriteriaBuilder  extends StandardTokenParsers {
     lexical.reserved += ("trouver", "de", "ko", "Mo", "Go", "mini", "maxi")
 
-    def sizeUnit = ("ko"|"Mo"|"Go") ^^ {
+    val sizeUnit = ("ko"|"Mo"|"Go") ^^ {
         case "ko" => SizeUnitEnumeration.ko
         case "Mo" => SizeUnitEnumeration.mo
         case "Go" => SizeUnitEnumeration.go
     }
 
-    def sizeCriteria = ("mini"|"maxi") ^^ {
+    val sizeCriteria = ("mini"|"maxi") ^^ {
         case "mini" => SizeCriteriaEnumeration.mini
         case "maxi" => SizeCriteriaEnumeration.maxi
     }
 
-    def searchOption = "de" ~> numericLit ~ sizeUnit ~ sizeCriteria ^^ { case n ~ u ~ c => SearchOption(n.toDouble,u,c)}
+    val searchOption = "de" ~> numericLit ~ sizeUnit ~ sizeCriteria ^^ { case n ~ u ~ c => SearchOption(n.toDouble,u,c)}
 
-    def searchOptions = rep(searchOption)
+    val searchOptions = rep(searchOption)
 
-    def searchExpression = "trouver" ~> stringLit ~ searchOptions ^^ {case s ~ o => FinderCriteria(s,o)}
+    val searchExpression = "trouver" ~> stringLit ~ searchOptions ^^ {case s ~ o => FinderCriteria(s,o)}
 
-    def simpleCriteria = ident ^^ { case s => FinderCriteria(s,Nil)}
+    val simpleCriteria = ident ^^ { case s => FinderCriteria(s,Nil)}
 
-    def searchCriteria =   searchExpression  | simpleCriteria
+    val searchCriteria =   searchExpression  | simpleCriteria
 
     def parse(s:String, p:Parser[Any]) = {
         val result = p(new lexical.Scanner(s))
