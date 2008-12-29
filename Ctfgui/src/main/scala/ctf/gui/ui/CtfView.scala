@@ -18,7 +18,7 @@ class CtfView(controller:UIController) extends Recherche {
         override lazy val peer = getSearchJButton
         reactions += {
             case ButtonClicked(_) =>
-                controller.searchCoordinator ! FinderCriteriaBuilder.parse(getSearchJTextField().getText,FinderCriteriaBuilder.searchCriteria)
+                controller.searchCoordinator ! FinderCriteriaBuilder.parseWithDefaultValue(getSearchJTextField().getText)
         }
     }
 

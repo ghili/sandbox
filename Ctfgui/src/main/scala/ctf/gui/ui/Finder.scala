@@ -49,5 +49,13 @@ object FinderCriteriaBuilder  extends StandardTokenParsers {
             case _ => throw new Exception("parsing failed:"+result)
         }
     }
+
+    def parseWithDefaultValue(s:String) = {
+        val result = searchCriteria(new lexical.Scanner(s))
+        result match {
+            case Success(obj,_) => obj
+            case _ => FinderCriteria(s,Nil)
+        }
+    }
 }
 
