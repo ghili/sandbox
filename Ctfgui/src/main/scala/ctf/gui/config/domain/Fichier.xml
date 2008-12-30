@@ -12,8 +12,19 @@
         <result property="dossier" column="id_dossier" select="getDossier"/>
     </resultMap>
 
-    <select id="rechercheFichier" parameterClass="java.lang.String" resultMap="get-fichier-result">
-         SELECT * FROM ct.fichier WHERE nom ilike #value# order by upper(nom)
+    <select id="rechercheFichier" resultMap="get-fichier-result">
+         SELECT * FROM ct.fichier 
+        <dynamic prepend="where">
+            <isNotNull prepend="and" property="name">
+              nom ilike #name#
+            </isNotNull>
+            <isGreaterThan prepend="and" property="minSize" compareValue="0">
+              taille &gt; #minSize#
+            </isGreaterThan>
+            <isGreaterThan prepend="and" property="maxSize" compareValue="0">
+              taille &lt; #maxSize#
+            </isGreaterThan>
+        </dynamic>
     </select>
 
     <select id="rechercheFichierParDossier" parameterClass="long" resultMap="get-fichier-result">

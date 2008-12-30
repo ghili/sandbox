@@ -8,7 +8,7 @@ import ui._
 class UIController {
     import Searcher._
 
-    var browserAction:BrowserAction = _
+    var browserView:BrowserView = _
     var finderView:FinderView = _
 
     def searchCoordinator:Actor = actor{
@@ -23,11 +23,11 @@ class UIController {
                         case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FinderCriteria] =>
                             finderView.loadResultFileList(fichierResult.fichiers)
                         case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierParDossierCriteria] =>
-                            browserAction.loadFileList(fichierResult.fichiers)
+                            browserView.loadFileList(fichierResult.fichiers)
                         case supportResult:SupportResult =>
-                            browserAction.loadSupportTree(supportResult.supports)
+                            browserView.loadSupportTree(supportResult.supports)
                         case dossierResult:DossierResult =>
-                            val idDossierRacine = browserAction.addDossierToNode(dossierResult.dossiers,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
+                            val idDossierRacine = browserView.addDossierToNode(dossierResult.dossiers,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
                             searcher ! FichierParDossierCriteria(idDossierRacine)
                         case _ => throw new Exception("unknown result list "+ result)
                     }

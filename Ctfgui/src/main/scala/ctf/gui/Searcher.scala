@@ -13,8 +13,8 @@ object Searcher {
                 case source:Any =>
                     println("searcher (" + self + ") <- "+source)
                     source match {
-                        case FinderCriteria(name,options) =>
-                            sender ! FichierResult(findFichier(name),source)
+                        case criteria:FinderCriteria =>
+                            sender ! FichierResult(findFichier(FinderCriteriaAdapter(criteria)),source)
                         case SearchAllSupport() =>
                             sender ! SupportResult(findAllSupport,source)
                         case DossierParSupportSearchCriteria(idSupport,node) =>
@@ -26,8 +26,8 @@ object Searcher {
         }
     }
 
-    private def findFichier(name:String):List[Fichier]=
-    SqlMapConfig.sqlMapper.queryForList("rechercheFichier", "%"+name+"%")
+    private def findFichier(criteria:FinderCriteriaAdapter):List[Fichier]=
+    SqlMapConfig.sqlMapper.queryForList("rechercheFichier",criteria)
 
     private def findFichierParDossier(idDossier:Long):List[Fichier]=
     SqlMapConfig.sqlMapper.queryForList("rechercheFichierParDossier", idDossier)
@@ -39,4 +39,29 @@ object Searcher {
     SqlMapConfig.sqlMapper.queryForList("rechercheDossierParSupport", idSupport)
 }
 
+import scala.reflect.BeanProperty
 
+case class FinderCriteriaAdapter(private val criteria:FinderCriteria){
+
+    @BeanProperty
+    val name = "%"+criteria.value+"%"
+
+    @BeanProperty
+    val minSize = getSize(SizeCriteriaEnumeration.mini)
+
+    @BeanProperty
+    val maxSize = getSize(SizeCriteriaEnumeration.maxi)
+
+    def getSize(typeCriteria:SizeCriteriaEnumeration.Value):Double={
+        val searchOption = criteria.options.find{(_:SearchOption).sizeCriteria==typeCriteria}
+        searchOption match {
+            case Some(o) => (o.sizeUnit  match {
+                        case SizeUnitEnumeration.ko => o.number * 1000
+                        case SizeUnitEnumeration.mo => o.number * 1000000
+                        case SizeUnitEnumeration.go => o.number * 1000000000
+                    })
+            case _ => 0
+        }
+    }
+
+}

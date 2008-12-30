@@ -8,7 +8,7 @@ object AppRecherche  {
     def launch = {
         val controller = new UIController
         val view = new CtfView(controller)
-        controller.browserAction = new BrowserAction(view)
+        controller.browserView = new BrowserView(view)
         controller.finderView = new FinderView(view)
 
 
