@@ -40,6 +40,7 @@
             <groupId>org.specs</groupId>
             <artifactId>specs</artifactId>
             <version>1.4.1</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -100,14 +101,22 @@
                         <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
                         <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
                     </classpathContainers>
-                    <manifest>
-                        <mainClass>ctf.gui.AppRecherche</mainClass>
-                        <packageName>ctf.gui</packageName>
-                    </manifest>
-                    <manifestEntries>
-                        <mode>development</mode>
-                        <url>${pom.url}</url>
-                    </manifestEntries>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>ctf.gui.AppRecherche</mainClass>
+                            <packageName>ctf.gui</packageName>
+                        </manifest>
+                        <manifestEntries>
+                            <mode>development</mode>
+                            <url>${pom.url}</url>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>
