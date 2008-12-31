@@ -52,7 +52,7 @@ case class FinderCriteriaAdapter(private val criteria:FinderCriteria){
     @BeanProperty
     val maxSize = getSize(SizeCriteriaEnumeration.maxi)
 
-    def getSize(typeCriteria:SizeCriteriaEnumeration.Value):Double={
+    private def getSize(typeCriteria:SizeCriteriaEnumeration.Value):Double={
         val searchOption = criteria.options.find{(_:SearchOption).sizeCriteria==typeCriteria}
         searchOption match {
             case Some(o) => (o.sizeUnit  match {

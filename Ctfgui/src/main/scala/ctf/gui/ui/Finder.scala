@@ -7,11 +7,7 @@ import javax.swing._
 class FinderView(view:CtfView) {
 
     def loadResultFileList(fichiers:List[Fichier]){
-        val rlist = new DefaultListModel()
-        for(fichier <- fichiers){
-            rlist addElement FichierSearchResultDisplayItem(fichier)
-        }
-        view.getResultList.setModel(rlist)
+        view.searchResultTable model_= new SearchResultTableModel(fichiers)
     }
 }
 

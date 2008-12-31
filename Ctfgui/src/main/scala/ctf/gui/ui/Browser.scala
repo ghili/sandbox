@@ -10,16 +10,11 @@ import javax.swing.tree._
 
 class BrowserView(view:CtfView) {
 
-
     /**
      *
      */
     def loadFileList(fichiers:List[Fichier]){
-        val rlist = new DefaultListModel()
-        for(fichier <- fichiers){
-            rlist addElement FichierDisplayItem(fichier)
-        }
-        view.getFileList.setModel(rlist)
+        view.browserTable model_= new BrowserTableModel(fichiers)
     }
 
     /**
