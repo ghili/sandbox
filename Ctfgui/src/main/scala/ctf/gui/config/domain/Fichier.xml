@@ -25,6 +25,7 @@
               taille &lt; #maxSize#
             </isGreaterThan>
         </dynamic>
+        order by nom
     </select>
 
     <select id="rechercheFichierParDossier" parameterClass="long" resultMap="get-fichier-result">
