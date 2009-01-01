@@ -109,7 +109,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>ctf.gui.AppRecherche</mainClass>
+                            <mainClass>ctf.gui.AppMain</mainClass>
                             <packageName>ctf.gui</packageName>
                         </manifest>
                         <manifestEntries>
@@ -127,7 +127,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>ctf.gui.AppRecherche</mainClass>
+                            <mainClass>ctf.gui.AppMain</mainClass>
                             <packageName>ctf.gui</packageName>
                         </manifest>
                         <manifestEntries>
