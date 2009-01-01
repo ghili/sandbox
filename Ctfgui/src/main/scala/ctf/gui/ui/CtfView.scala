@@ -37,8 +37,6 @@ class CtfView(env: {val controller:UIController}) extends Recherche {
     val browserTable = new Table{
         override lazy val peer = getBrowserJTable
     }
-
-    //getRefreshButton.addActionListener()
     
     getSupportTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION)
     val supportTreeEventListener = new SupportTreeEventListener(this,env.controller)
@@ -54,8 +52,6 @@ class CtfView(env: {val controller:UIController}) extends Recherche {
 
 
 sealed abstract case class DisplayItem
-//case class FichierDisplayItem(fichier:Fichier) extends DisplayItem { override def toString = fichier.nom + fichier.extension }
-
 case class SupportDisplayItem(support:Support) extends DisplayItem { override def toString = support.nom}
 case class DossierDisplayItem(dossier:Dossier) extends DisplayItem { override def toString = dossier.nom}
 case class DossierRacineDisplayItem(override val dossier:Dossier, support:Support) extends DossierDisplayItem(dossier) {
@@ -76,7 +72,7 @@ trait FichierTableModel extends AbstractTableModel {
 
     override def getValueAt(rowIndex:Int, columnIndex:Int) = {
         (columnValues.find {(_:ColumnFunction) isDefinedAt columnIndex }
-        .getOrElse(throw new Exception("enable to find value for column"+columnIndex)))(columnIndex)(fichiers(rowIndex))
+        .getOrElse(throw new Exception("unable to find value for column"+columnIndex)))(columnIndex)(fichiers(rowIndex))
     }
 }
 

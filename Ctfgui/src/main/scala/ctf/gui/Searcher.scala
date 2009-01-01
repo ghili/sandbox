@@ -61,7 +61,7 @@ case class FinderCriteriaAdapter(private val criteria:FinderCriteria){
                         case SizeUnitEnumeration.mo => o.number * 1000000
                         case SizeUnitEnumeration.go => o.number * 1000000000
                     })
-            case _ => 0
+            case _ => -1
         }
     }
 

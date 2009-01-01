@@ -39,16 +39,14 @@ object FinderCriteriaBuilder  extends StandardTokenParsers {
     val searchCriteria =   searchExpression  | simpleCriteria
 
     def parse(s:String, p:Parser[Any]) = {
-        val result = p(new lexical.Scanner(s))
-        result match {
+        p(new lexical.Scanner(s)) match {
             case Success(obj,_) => obj
-            case _ => throw new Exception("parsing failed:"+result)
+            case x @ _ => throw new Exception("parsing failed:" + x)
         }
     }
 
     def parseWithDefaultValue(s:String) = {
-        val result = searchCriteria(new lexical.Scanner(s))
-        result match {
+        searchCriteria(new lexical.Scanner(s)) match {
             case Success(obj,_) => obj
             case _ => FinderCriteria(s,Nil)
         }

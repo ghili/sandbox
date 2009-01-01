@@ -18,10 +18,10 @@
             <isNotNull prepend="and" property="name">
               nom ilike #name#
             </isNotNull>
-            <isGreaterThan prepend="and" property="minSize" compareValue="0">
+            <isGreaterThan prepend="and" property="minSize" compareValue="-1">
               taille &gt; #minSize#
             </isGreaterThan>
-            <isGreaterThan prepend="and" property="maxSize" compareValue="0">
+            <isGreaterThan prepend="and" property="maxSize" compareValue="-1">
               taille &lt; #maxSize#
             </isGreaterThan>
         </dynamic>

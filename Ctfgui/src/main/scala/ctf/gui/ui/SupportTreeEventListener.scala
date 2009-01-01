@@ -20,7 +20,7 @@ class SupportTreeEventListener(view:CtfView,controller:UIController) extends Tre
         node.getUserObject match {
             case SupportDisplayItem(support) => controller.searchCoordinator ! DossierParSupportSearchCriteria(support.idSupport, node)
             case DossierDisplayItem(dossier) => controller.searchCoordinator ! FichierParDossierCriteria(dossier.idDossier)
-            case _ => throw new Exception("unknown node")
+            case x @ _ => throw new Exception("unknown node :" + x)
         }
     }
 }
