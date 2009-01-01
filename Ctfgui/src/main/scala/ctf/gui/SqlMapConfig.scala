@@ -10,16 +10,14 @@ import collection.jcl.BufferWrapper
 class SqlMapConfig(configPath:String) {
     var sqlMapper:SqlMapClient = _
 
-
-    def init(configPath:String) = {
-        try {
-            val reader = Resources.getResourceAsReader(configPath)
-            sqlMapper = SqlMapClientBuilder.buildSqlMapClient(reader)
-            reader.close
-        } catch { 
-            case e:Exception => e.printStackTrace()
-        }
+    try {
+        val reader = Resources.getResourceAsReader(configPath)
+        sqlMapper = SqlMapClientBuilder.buildSqlMapClient(reader)
+        reader.close
+    } catch {
+        case e:Exception => e.printStackTrace()
     }
+
 }
 
 object CustomConversions {

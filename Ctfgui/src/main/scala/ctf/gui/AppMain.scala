@@ -3,7 +3,7 @@ package ctf.gui
 import ui._
 
 
-object AppRecherche  {
+object AppMain  {
 
     def launch = {
         val ctx = new AppContext
