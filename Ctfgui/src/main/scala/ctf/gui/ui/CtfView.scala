@@ -63,13 +63,21 @@ case class DossierRacineDisplayItem(override val dossier:Dossier, support:Suppor
 }
 
 trait FichierTableModel extends AbstractTableModel {
-    val columns:List[String]
+    var columns:List[String]=List()
     val fichiers:List[Fichier]
     type ColumnFunction = PartialFunction[Int, (Fichier => Object)]
+    var columnValues:List[ColumnFunction]=List()
+
+    override def getColumnCount = columns.size
 
     override def getColumnName(columnIndex:Int) = columns(columnIndex)
 
     override def getRowCount = fichiers.size
+
+    override def getValueAt(rowIndex:Int, columnIndex:Int) = {
+        (columnValues.find {(_:ColumnFunction) isDefinedAt columnIndex }
+        .getOrElse(throw new Exception("no function for column"+columnIndex)))(columnIndex)(fichiers(rowIndex))
+    }
 
     protected def getSizeString(fichier:Fichier):String = {
         if (fichier.taille>1000000000){ (fichier.taille/1000000000) + " Go"}
@@ -82,36 +90,16 @@ trait FichierTableModel extends AbstractTableModel {
 }
 
 class BrowserTableModel(val fichiers:List[Fichier]) extends FichierTableModel{
-    val columns = List("file name", "size")
-    
-    override def getColumnCount = 2
-
-    override def getValueAt(rowIndex:Int, columnIndex:Int) = {
-        val fichier = fichiers(rowIndex)
-        columnValue(columnIndex)(fichier)
-    }
-
-    def columnValue:ColumnFunction = {
+    columns ++= List("file name", "size")
+    columnValues += {
         case 0 => {fichier:Fichier => fichier.nom + fichier.extension}
         case 1 => getSizeString(_:Fichier)
     }
 }
 
 class SearchResultTableModel(override val fichiers:List[Fichier]) extends BrowserTableModel(fichiers){
-    override val columns = List("file name", "size","support", "path")
-
-    override def getColumnCount = 4
-
-    override def getValueAt(rowIndex:Int, columnIndex:Int) = {
-        val fichier = fichiers(rowIndex)
-        if (columnIndex< super.getColumnCount){
-            super.columnValue(columnIndex)(fichier)
-        }else{
-            columnValue(columnIndex)(fichier)
-        }
-    }
-
-    override def columnValue:ColumnFunction = {
+    columns ++= List("support", "path")
+    columnValues += {
         case 2 => (_:Fichier).dossier.support.nom
         case 3 => (_:Fichier).dossier.chemin
     }
