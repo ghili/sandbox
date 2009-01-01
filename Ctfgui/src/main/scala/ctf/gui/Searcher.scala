@@ -2,9 +2,10 @@ package ctf.gui
 
 import scala.actors._
 import scala.actors.Actor._
+import com.ibatis.sqlmap.client.SqlMapClient
 import domain._
 
-object Searcher {
+class Searcher(env:{val sqlMapper:SqlMapClient}) {
     import CustomConversions.convertList
 
     def searcher: Actor = actor {
@@ -15,7 +16,7 @@ object Searcher {
                     source match {
                         case criteria:FinderCriteria =>
                             sender ! FichierResult(findFichier(FinderCriteriaAdapter(criteria)),source)
-                        case SearchAllSupport() =>
+                        case SearchAllSupport =>
                             sender ! SupportResult(findAllSupport,source)
                         case DossierParSupportSearchCriteria(idSupport,node) =>
                             sender ! DossierResult(findDossierParSupport(idSupport),source)
@@ -27,16 +28,16 @@ object Searcher {
     }
 
     private def findFichier(criteria:FinderCriteriaAdapter):List[Fichier]=
-    SqlMapConfig.sqlMapper.queryForList("rechercheFichier",criteria)
+    env.sqlMapper.queryForList("rechercheFichier",criteria)
 
     private def findFichierParDossier(idDossier:Long):List[Fichier]=
-    SqlMapConfig.sqlMapper.queryForList("rechercheFichierParDossier", idDossier)
+    env.sqlMapper.queryForList("rechercheFichierParDossier", idDossier)
 
     private def findAllSupport:List[Support]=
-    SqlMapConfig.sqlMapper.queryForList("rechercheToutSupport", None)
+    env.sqlMapper.queryForList("rechercheToutSupport", None)
 
     private def findDossierParSupport(idSupport:Long):List[Dossier]=
-    SqlMapConfig.sqlMapper.queryForList("rechercheDossierParSupport", idSupport)
+    env.sqlMapper.queryForList("rechercheDossierParSupport", idSupport)
 }
 
 import scala.reflect.BeanProperty

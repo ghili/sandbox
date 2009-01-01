@@ -5,11 +5,10 @@ import actors._
 import actors.Actor._
 import ui._
 
-class UIController {
-    import Searcher._
-
-    var browserView:BrowserView = _
-    var finderView:FinderView = _
+class UIController(env: {val searcher:Searcher
+                         val finderView:FinderView
+                         val browserView:BrowserView}) {
+    val searcher = env.searcher.searcher
 
     def searchCoordinator:Actor = actor{
         loop{
@@ -21,17 +20,17 @@ class UIController {
                     println("searchCoordinator ("+self+") <- "+result.results.size + " results for "+result.source+" found")
                     result match {
                         case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FinderCriteria] =>
-                            finderView.loadResultFileList(fichierResult.fichiers)
+                            env.finderView.loadResultFileList(fichierResult.fichiers)
                         case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierParDossierCriteria] =>
-                            browserView.loadFileList(fichierResult.fichiers)
+                            env.browserView.loadFileList(fichierResult.fichiers)
                         case supportResult:SupportResult =>
-                            browserView.loadSupportTree(supportResult.supports)
+                            env.browserView.loadSupportTree(supportResult.supports)
                         case dossierResult:DossierResult =>
-                            val idDossierRacine = browserView.addDossierToNode(dossierResult.dossiers,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
+                            val idDossierRacine = env.browserView.addDossierToNode(dossierResult.dossiers,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
                             searcher ! FichierParDossierCriteria(idDossierRacine)
                         case _ => throw new Exception("unknown result list "+ result)
                     }
-                 case message:Any => throw new Exception("unknown message "+message)
+                case message:Any => throw new Exception("unknown message "+message)
             }
         }
     }

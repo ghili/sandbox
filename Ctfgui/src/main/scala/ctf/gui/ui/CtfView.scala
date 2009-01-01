@@ -11,7 +11,7 @@ import javax.swing.tree._
 import javax.swing.table._
 import ctf.gui.SearchAllSupport
 
-class CtfView(controller:UIController) extends Recherche {
+class CtfView(env: {val controller:UIController}) extends Recherche {
 
     //listeners initialization
 
@@ -19,7 +19,7 @@ class CtfView(controller:UIController) extends Recherche {
         override lazy val peer = getSearchJButton
         reactions += {
             case ButtonClicked(_) =>
-                controller.searchCoordinator ! FinderCriteriaBuilder.parseWithDefaultValue(getSearchJTextField().getText)
+                env.controller.searchCoordinator ! FinderCriteriaBuilder.parseWithDefaultValue(getSearchJTextField().getText)
         }
     }
 
@@ -41,7 +41,7 @@ class CtfView(controller:UIController) extends Recherche {
     //getRefreshButton.addActionListener()
     
     getSupportTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION)
-    val supportTreeEventListener = new SupportTreeEventListener(this,controller)
+    val supportTreeEventListener = new SupportTreeEventListener(this,env.controller)
     getSupportTree.addTreeSelectionListener(supportTreeEventListener)
     getSupportTree.addTreeWillExpandListener(supportTreeEventListener)
 
@@ -49,7 +49,7 @@ class CtfView(controller:UIController) extends Recherche {
 
     initSupport
 
-    def initSupport = controller.searchCoordinator ! SearchAllSupport()
+    def initSupport = env.controller.searchCoordinator ! SearchAllSupport
 }
 
 
@@ -80,7 +80,7 @@ trait FichierTableModel extends AbstractTableModel {
     }
 }
 
-class BrowserTableModel(val fichiers:List[Fichier]) extends AbstractTableModel with FichierTableModel{
+class BrowserTableModel(val fichiers:List[Fichier]) extends FichierTableModel{
     val columns = List("file name", "size")
     
     override def getColumnCount = 2
@@ -96,7 +96,7 @@ class BrowserTableModel(val fichiers:List[Fichier]) extends AbstractTableModel w
 
 }
 
-class SearchResultTableModel(val fichiers:List[Fichier]) extends AbstractTableModel with FichierTableModel{
+class SearchResultTableModel(val fichiers:List[Fichier]) extends FichierTableModel{
     val columns = List("file name", "size", "support", "path")
 
     override def getColumnCount = 4

@@ -8,13 +8,13 @@ import javax.swing._
 import javax.swing.event._
 import javax.swing.tree._
 
-class BrowserView(view:CtfView) {
+class BrowserView(env: {val view:CtfView}) {
 
     /**
      *
      */
     def loadFileList(fichiers:List[Fichier]){
-        view.browserTable model_= new BrowserTableModel(fichiers)
+        env.view.browserTable model_= new BrowserTableModel(fichiers)
     }
 
     /**
@@ -25,7 +25,7 @@ class BrowserView(view:CtfView) {
         for(support <- supports){
             rootNode add (new DefaultMutableTreeNode(SupportDisplayItem(support)))
         }
-        view.getSupportTree.setModel(new DefaultTreeModel(rootNode))
+        env.view.getSupportTree.setModel(new DefaultTreeModel(rootNode))
     }
 
     /**

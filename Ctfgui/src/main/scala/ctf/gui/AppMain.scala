@@ -6,15 +6,11 @@ import ui._
 object AppRecherche  {
 
     def launch = {
-        val controller = new UIController
-        val view = new CtfView(controller)
-        controller.browserView = new BrowserView(view)
-        controller.finderView = new FinderView(view)
-
+        val ctx = new AppContext
 
         java.awt.EventQueue.invokeLater(new Runnable() {
                 def run() {
-                    view.setVisible(true)
+                    ctx.view.setVisible(true)
                 }
             })
     }

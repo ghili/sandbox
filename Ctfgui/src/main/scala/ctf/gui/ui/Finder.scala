@@ -4,10 +4,10 @@ package ctf.gui.ui
 import ctf.gui.domain._
 import javax.swing._
 
-class FinderView(view:CtfView) {
+class FinderView(env: {val view:CtfView}) {
 
     def loadResultFileList(fichiers:List[Fichier]){
-        view.searchResultTable model_= new SearchResultTableModel(fichiers)
+        env.view.searchResultTable model_= new SearchResultTableModel(fichiers)
     }
 }
 

@@ -11,7 +11,7 @@ import javax.swing.tree._
 sealed abstract case class CriteriaMessage
 case class FichierParDossierCriteria(idDossier:Long) extends CriteriaMessage
 case class DossierParSupportSearchCriteria(idSupport:Long, node:DefaultMutableTreeNode) extends CriteriaMessage
-case class SearchAllSupport extends CriteriaMessage
+case object SearchAllSupport extends CriteriaMessage
 object SizeUnitEnumeration extends Enumeration {
     val ko = Value("ko")
     val mo = Value("mo")
