@@ -65,6 +65,7 @@ case class DossierRacineDisplayItem(override val dossier:Dossier, support:Suppor
 trait FichierTableModel extends AbstractTableModel {
     val columns:List[String]
     val fichiers:List[Fichier]
+    type ColumnFunction = PartialFunction[Int, (Fichier => Object)]
 
     override def getColumnName(columnIndex:Int) = columns(columnIndex)
 
@@ -87,28 +88,31 @@ class BrowserTableModel(val fichiers:List[Fichier]) extends FichierTableModel{
 
     override def getValueAt(rowIndex:Int, columnIndex:Int) = {
         val fichier = fichiers(rowIndex)
-        columnIndex match{
-            case 0 => fichier.nom + fichier.extension
-            case 1 => getSizeString(fichier)
-            case _ => throw new Exception("unknown column : "+columnIndex)
-        }
+        columnValue(columnIndex)(fichier)
     }
 
+    def columnValue:ColumnFunction = {
+        case 0 => {fichier:Fichier => fichier.nom + fichier.extension}
+        case 1 => getSizeString(_:Fichier)
+    }
 }
 
-class SearchResultTableModel(val fichiers:List[Fichier]) extends FichierTableModel{
-    val columns = List("file name", "size", "support", "path")
+class SearchResultTableModel(override val fichiers:List[Fichier]) extends BrowserTableModel(fichiers){
+    override val columns = List("file name", "size","support", "path")
 
     override def getColumnCount = 4
 
     override def getValueAt(rowIndex:Int, columnIndex:Int) = {
         val fichier = fichiers(rowIndex)
-        columnIndex match{
-            case 0 => fichier.nom + fichier.extension
-            case 1 => getSizeString(fichier)
-            case 2 => fichier.dossier.support.nom
-            case 3 => fichier.dossier.chemin
-            case _ => throw new Exception("unknown column : "+columnIndex)
+        if (columnIndex< super.getColumnCount){
+            super.columnValue(columnIndex)(fichier)
+        }else{
+            columnValue(columnIndex)(fichier)
         }
+    }
+
+    override def columnValue:ColumnFunction = {
+        case 2 => (_:Fichier).dossier.support.nom
+        case 3 => (_:Fichier).dossier.chemin
     }
 }

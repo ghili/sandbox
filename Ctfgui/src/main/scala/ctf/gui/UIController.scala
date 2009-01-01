@@ -18,9 +18,9 @@ class UIController(env: {val searcher:Searcher
                 case result:ResultListMessage =>
                     println("searchCoordinator ("+self+") <- "+result.results.size + " results for "+result.source+" found")
                     result match {
-                        case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FinderCriteria] =>
+                        case fichierResult @ FichierResult(_,_:FinderCriteria) =>
                             env.finderView.loadResultFileList(fichierResult.fichiers)
-                        case fichierResult:FichierResult if fichierResult.source.isInstanceOf[FichierParDossierCriteria] =>
+                        case fichierResult @ FichierResult(_,_:FichierParDossierCriteria) =>
                             env.browserView.loadFileList(fichierResult.fichiers)
                         case supportResult:SupportResult =>
                             env.browserView.loadSupportTree(supportResult.supports)
