@@ -76,16 +76,7 @@ trait FichierTableModel extends AbstractTableModel {
 
     override def getValueAt(rowIndex:Int, columnIndex:Int) = {
         (columnValues.find {(_:ColumnFunction) isDefinedAt columnIndex }
-        .getOrElse(throw new Exception("no function for column"+columnIndex)))(columnIndex)(fichiers(rowIndex))
-    }
-
-    protected def getSizeString(fichier:Fichier):String = {
-        if (fichier.taille>1000000000){ (fichier.taille/1000000000) + " Go"}
-        else if (fichier.taille>1000000){ (fichier.taille/1000000) + " Mo"}
-        else if (fichier.taille>1000){ (fichier.taille/1000) + " ko"}
-        else {
-            fichier.taille +" bytes"
-        }
+        .getOrElse(throw new Exception("enable to find value for column"+columnIndex)))(columnIndex)(fichiers(rowIndex))
     }
 }
 
@@ -94,6 +85,15 @@ class BrowserTableModel(val fichiers:List[Fichier]) extends FichierTableModel{
     columnValues += {
         case 0 => {fichier:Fichier => fichier.nom + fichier.extension}
         case 1 => getSizeString(_:Fichier)
+    }
+
+    private def getSizeString(fichier:Fichier):String = {
+        if (fichier.taille>1000000000){ (fichier.taille/1000000000) + " Go"}
+        else if (fichier.taille>1000000){ (fichier.taille/1000000) + " Mo"}
+        else if (fichier.taille>1000){ (fichier.taille/1000) + " ko"}
+        else {
+            fichier.taille +" bytes"
+        }
     }
 }
 
