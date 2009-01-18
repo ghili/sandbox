@@ -3,9 +3,10 @@
 module Main where
 
 import System.Environment (getArgs)
-import CtFileBrowsing
-import CtDataOperations
+--import CtFileBrowsing
+--import CtDataOperations
 import CtDataAccess
+import CtFileDataOperation
 import Data.Tree
 import System.Console.GetOpt
 import System.Log.Logger
@@ -30,6 +31,5 @@ main = do
   fh <- fileHandler "out_inject.log" DEBUG
   updateGlobalLogger rootLoggerName (setLevel DEBUG . setHandlers [fh])
   (targetlabel, folderpath) <- getArgs >>= parseOptions
-  folderForest <- browseEachFolder [folderpath] 
-  mapM_ ((connectAndDo readDbConfig) . (recordFolderTree targetlabel)) folderForest
-  debugM rootLoggerName (foldr ((++) . (++ "\n") . show . flatten) "" folderForest)
+  connectAndDo readDbConfig (execRecordSupport folderpath targetlabel)
+--  debugM rootLoggerName (foldr ((++) . (++ "\n") . show . flatten) "" folderForest)
