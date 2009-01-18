@@ -48,13 +48,12 @@ sequence_dossier = "ct.dossier_id_dossier_seq"
 
 
 execRecordSupport :: String -> String -> Connection -> IO BrowseState
-execRecordSupport chemin label dbh = withTransaction dbh $ (\conn ->  execStateT (recordSupport chemin label) $ BrowseState{iddossier = Nothing, idsupport = SqlNull, nom = label , rootPath=chemin, chemin = chemin, c = conn})
+execRecordSupport chemin label dbh = withTransaction dbh $ (\conn ->  execStateT (recordSupport chemin label) $ BrowseState{iddossier = Nothing, idsupport = SqlNull, nom = label , rootPath = dropTrailingPathSeparator chemin, chemin = chemin, c = conn})
 
 recordFileNodes :: [String] -> BrowseState -> IO ()
 recordFileNodes nomFichiers s = do
    stmt <- (prepare (c s) insert_fichier)
    filesInfos <- (mapM (getFileInfo (chemin s)) nomFichiers)
-   debugM logbase $ "record files" ++ (show filesInfos) ++ (show $ iddossier s)
    handleSqlError $ executeMany stmt $ getFilesInfoSqlValues (toSqlMaybe $ iddossier s) filesInfos
 
 recordSupport :: String -> String -> StateWithIO BrowseState ()
@@ -65,7 +64,7 @@ recordSupport chemin label = do
                            check <- checkFolder chemin
                            handleSqlError $ execute st [supportid, SqlString label, SqlInteger(check)]
                            return supportid
-  put s{idsupport = supportId, rootPath = chemin}
+  put s{idsupport = supportId}
   recordFolder ""
 
 recordFolder :: String -> StateWithIO BrowseState ()
@@ -73,7 +72,6 @@ recordFolder nomDossier = do
   s <- get
   idDossier <- liftIO $ do folderid <- getNextSequenceValue (c s) sequence_dossier
                            st <- prepare (c s) insert_dossier
-                           debugM logbase $ "record folder" ++ nomDossier
                            handleSqlError $ execute st [folderid, SqlString nomDossier, toSql (dropRootPath s), toSqlMaybe (iddossier s), idsupport s]
                            return $ Just folderid
   put s{iddossier = idDossier, chemin = combine (chemin s) nomDossier}
@@ -85,7 +83,7 @@ recordFolder nomDossier = do
     folders <- filterM (doesDirectoryNameExist s) contents
     mapM_ (\f->evalStateT (recordFolder f) s) folders
   return res
-  where dropRootPath s = drop (length (rootPath s)) (chemin s)
+  where dropRootPath s = drop (length (rootPath s) +1 ) (chemin s)
         fullPath s relativePath = normalise $ combine (chemin s) relativePath
         doesFileNameExist s fileName = doesFileExist(fullPath s fileName)
         doesDirectoryNameExist s dirName = doesDirectoryExist(fullPath s dirName)
@@ -99,11 +97,9 @@ checkFolder chemin = do
   folders <- filterM doesDirectoryExist paths
   folderSizes <- mapM checkFolder folders
   return $ (sum fileSizes) + (sum folderSizes)
-
-getFileSize chemin = do 
-  debugM logbase $ "check file " ++ chemin
-  h <- openFile chemin ReadMode 
-  hFileSize h
+    where getFileSize chemin = do 
+                       h <- openFile chemin ReadMode 
+                       hFileSize h
   
 filterNotDots = filter (\p -> p /= "." && p /="..")
 
