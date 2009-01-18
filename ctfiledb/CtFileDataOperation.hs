@@ -20,11 +20,11 @@ import System.IO.Unsafe(unsafePerformIO)
 
 
 data BrowseState = BrowseState {
-      b_iddossier:: Maybe SqlValue,
-      b_idsupport:: SqlValue,
+      iddossier:: Maybe SqlValue,
+      idsupport:: SqlValue,
       nom::String,
       rootPath::String,
-      b_chemin::String,
+      chemin::String,
       c::Connection
 }
 
@@ -45,12 +45,11 @@ insert_dossier = "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_pa
 sequence_support = "ct.support_id_support_seq"
 sequence_dossier = "ct.dossier_id_dossier_seq" 
 
-recordFileNodes :: [String] -> StateWithIO BrowseState ()
-recordFileNodes nomFichiers = do
-  s <- get 
-  liftIO $ do stmt <- (prepare (c s) insert_fichier)
-              filesInfos <- (mapM (getFileInfo (b_chemin s)) nomFichiers)
-              executeMany stmt $ getFilesInfoSqlValues (toSqlMaybe $ b_iddossier s) filesInfos
+recordFileNodes :: [String] -> BrowseState -> IO()
+recordFileNodes nomFichiers s = do
+  do stmt <- (prepare (c s) insert_fichier)
+     filesInfos <- (mapM (getFileInfo (chemin s)) nomFichiers)
+     executeMany stmt $ getFilesInfoSqlValues (toSqlMaybe $ iddossier s) filesInfos
 
 recordSupport :: String -> String -> StateWithIO BrowseState ()
 recordSupport chemin label = do
@@ -59,7 +58,7 @@ recordSupport chemin label = do
                            st <- prepare (c s) insert_support
                            execute st [supportid, SqlString label, SqlInteger( 0 )]
                            return supportid
-  put s{b_idsupport = supportId, rootPath = chemin}
+  put s{idsupport = supportId, rootPath = chemin}
   recordFolder "/"
 
 recordFolder :: String -> StateWithIO BrowseState ()
@@ -67,18 +66,17 @@ recordFolder nomDossier = do
   s <- get
   idDossier <- liftIO $ do folderid <- getNextSequenceValue (c s) sequence_dossier
                            st <- prepare (c s) insert_dossier
-                           execute st [folderid, SqlString nomDossier, toSql (dropRootPath (b_chemin s) (rootPath s)), toSqlMaybe (b_iddossier s), b_idsupport s]
+                           execute st [folderid, SqlString nomDossier, toSql (dropRootPath s), toSqlMaybe (iddossier s), idsupport s]
                            return $ Just folderid
-  put s{b_iddossier = idDossier, b_chemin = msum [b_chemin s, "/", nomDossier]}
-  tuple <- liftIO $ do contents <- getDirectoryContents (b_chemin s)
-                       filteredContents <- return (dropWhile (\x -> x== "." || x== "..") contents)
-                       paths <- return $ map (normalise . (combine (b_chemin s))) filteredContents
-                       files <- filterM ((liftM not) . doesDirectoryExist) paths
-                       dirs <- filterM doesDirectoryExist paths
-                       return (files,dirs)
-  recordFileNodes (fst tuple)
-  sequence_ $ map recordFolder (snd tuple)
-  where dropRootPath path rootPath = drop (length rootPath) path                     
+  put s{iddossier = idDossier, chemin = msum [chemin s, "/", nomDossier]}
+  folders <- liftIO $ do contents <- getDirectoryContents (chemin s)
+                         filteredContents <- return (dropWhile (\x -> x== "." || x== "..") contents)
+                         paths <- return $ map (normalise . (combine (chemin s))) filteredContents
+                         files <- filterM ((liftM not) . doesDirectoryExist) paths
+                         recordFileNodes files s
+                         filterM doesDirectoryExist paths
+  sequence_ $ map recordFolder folders
+  where dropRootPath s = drop (length (rootPath s)) (chemin s)
 
 {--
 instance Show (FileInfo) where
