@@ -1,5 +1,5 @@
 
-module CtFileDataOperations
+module CtFileDataOperation
 where
 
 import Database.HDBC 
@@ -16,8 +16,9 @@ import System.Locale (defaultTimeLocale)
 import Control.Monad.State
 import Text.Printf
 import Data.Maybe
-import System.IO.Unsafe(unsafePerformIO)
+import System.Log.Logger
 
+logbase = "CtFileDataOperation"
 
 data BrowseState = BrowseState {
       iddossier:: Maybe SqlValue,
@@ -45,11 +46,17 @@ insert_dossier = "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_pa
 sequence_support = "ct.support_id_support_seq"
 sequence_dossier = "ct.dossier_id_dossier_seq" 
 
+
+execRecordSupport :: String -> String -> Connection -> IO BrowseState
+execRecordSupport chemin label dbh =
+    execStateT (recordSupport chemin label) $ BrowseState{iddossier = Nothing, idsupport = SqlNull, nom = label , rootPath=chemin, chemin = chemin, c = dbh}
+
 recordFileNodes :: [String] -> BrowseState -> IO()
 recordFileNodes nomFichiers s = do
-  do stmt <- (prepare (c s) insert_fichier)
-     filesInfos <- (mapM (getFileInfo (chemin s)) nomFichiers)
-     executeMany stmt $ getFilesInfoSqlValues (toSqlMaybe $ iddossier s) filesInfos
+   stmt <- (prepare (c s) insert_fichier)
+   filesInfos <- (mapM (getFileInfo (chemin s)) nomFichiers)
+   debugM logbase $ "record files" ++ (show nomFichiers)
+   executeMany stmt $ getFilesInfoSqlValues (toSqlMaybe $ iddossier s) filesInfos
 
 recordSupport :: String -> String -> StateWithIO BrowseState ()
 recordSupport chemin label = do
@@ -59,24 +66,29 @@ recordSupport chemin label = do
                            execute st [supportid, SqlString label, SqlInteger( 0 )]
                            return supportid
   put s{idsupport = supportId, rootPath = chemin}
-  recordFolder "/"
+  recordFolder ""
 
 recordFolder :: String -> StateWithIO BrowseState ()
 recordFolder nomDossier = do
   s <- get
   idDossier <- liftIO $ do folderid <- getNextSequenceValue (c s) sequence_dossier
                            st <- prepare (c s) insert_dossier
+                           debugM logbase $ "record folder" ++ nomDossier
                            execute st [folderid, SqlString nomDossier, toSql (dropRootPath s), toSqlMaybe (iddossier s), idsupport s]
                            return $ Just folderid
-  put s{iddossier = idDossier, chemin = msum [chemin s, "/", nomDossier]}
-  folders <- liftIO $ do contents <- getDirectoryContents (chemin s)
-                         filteredContents <- return (dropWhile (\x -> x== "." || x== "..") contents)
-                         paths <- return $ map (normalise . (combine (chemin s))) filteredContents
-                         files <- filterM ((liftM not) . doesDirectoryExist) paths
-                         recordFileNodes files s
-                         filterM doesDirectoryExist paths
-  sequence_ $ map recordFolder folders
+  put s{iddossier = idDossier, chemin = combine (chemin s) nomDossier}
+  s <- get
+  res <- liftIO $ do 
+    contents <- (liftM filterNotDots) $ getDirectoryContents (chemin s)
+    files <- filterM ((liftM not) . (doesDirectoryNameExist s)) contents
+    recordFileNodes files s
+    folders <- filterM (doesDirectoryNameExist s) contents
+    mapM_ (\f->evalStateT (recordFolder f) s) folders
+  return res
   where dropRootPath s = drop (length (rootPath s)) (chemin s)
+        filterNotDots = filter (\p -> p /= "." && p /="..")
+        fullPath s relativePath = normalise $ combine (chemin s) relativePath
+        doesDirectoryNameExist s dirName = doesDirectoryExist(fullPath s dirName)
 
 {--
 instance Show (FileInfo) where
