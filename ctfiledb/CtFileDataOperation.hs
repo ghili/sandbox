@@ -63,7 +63,7 @@ recordSupport chemin label = do
   supportId <- liftIO $ do supportid <- getNextSequenceValue (c s) sequence_support
                            st <- prepare (c s) insert_support
                            check <- checkFolder chemin
-                           handleSqlError $ execute st [supportid, SqlString label, SqlInteger( check )]
+                           handleSqlError $ execute st [supportid, SqlString label, SqlInteger(check)]
                            return supportid
   put s{idsupport = supportId, rootPath = chemin}
   recordFolder ""
@@ -93,10 +93,11 @@ recordFolder nomDossier = do
 checkFolder :: String -> IO Integer
 checkFolder chemin = do
   contents <- (liftM filterNotDots) $ getDirectoryContents chemin
-  files <- filterM doesFileExist contents
-  fileSizes <- mapM (getFileSize . (combine chemin)) files
-  folders <- filterM doesDirectoryExist contents
-  folderSizes <- mapM (checkFolder . (combine chemin)) folders
+  paths <- return $ map (combine chemin) contents
+  files <- filterM doesFileExist paths
+  fileSizes <- mapM getFileSize files
+  folders <- filterM doesDirectoryExist paths
+  folderSizes <- mapM checkFolder folders
   return $ (sum fileSizes) + (sum folderSizes)
 
 getFileSize chemin = do 
