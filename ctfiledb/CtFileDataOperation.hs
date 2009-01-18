@@ -18,14 +18,17 @@ import Text.Printf
 import Data.Maybe
 import System.IO.Unsafe(unsafePerformIO)
 
+
 data BrowseState = BrowseState {
-      b_iddossier:: IO (Maybe SqlValue),
-      b_idsupport:: IO SqlValue,
+      b_iddossier:: Maybe SqlValue,
+      b_idsupport:: SqlValue,
       nom::String,
       rootPath::String,
-      b_chemin::IO String,
+      b_chemin::String,
       c::Connection
 }
+
+type StateWithIO s a = StateT s IO a
 
 data FileInfo = FileInfo {
     absoluteName :: String,
@@ -36,58 +39,48 @@ data FileInfo = FileInfo {
 
 data FolderInfo = FolderInfo { folderName :: String, folderPath :: String, files :: [FileInfo]}
 
+insert_fichier = "INSERT INTO ct.fichier (id_dossier, nom, extension, taille, date_fichier) VALUES (?, ?, ?, ?, ?)"
+insert_support = "INSERT INTO ct.support (id_support, nom, chck, date_creation) VALUES (?, ?, ?, LOCALTIMESTAMP)"
+insert_dossier = "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_parent, id_support) VALUES (?, ?, ?, ?, ?)"
+sequence_support = "ct.support_id_support_seq"
+sequence_dossier = "ct.dossier_id_dossier_seq" 
 
-{--recordFileNode :: IO String -> State BrowseState (IO Integer)
-recordFileNode nomFichier = do
-  s <- get
-  return $ do st <- prepare (c s) "INSERT INTO ct.fichier (id_dossier, nom, extension, taille, date_fichier) VALUES (?, ?, ?, ?, ?)"
-              f <- nomFichier
-              fileInfo <- getFileInfo (b_chemin s) f
-              idDossier <- b_iddossier s
-              execute st $ getFileInfoSqlValues (toSqlMaybe idDossier) fileInfo --}
-
-recordFileNodes :: IO [String] -> State BrowseState (IO ())
+recordFileNodes :: [String] -> StateWithIO BrowseState ()
 recordFileNodes nomFichiers = do
-  s <- get
-  return $ do st <- prepare (c s) "INSERT INTO ct.fichier (id_dossier, nom, extension, taille, date_fichier) VALUES (?, ?, ?, ?, ?)"
-              f <- nomFichiers
-              filesInfos <- mapM (getFileInfo (b_chemin s)) f
-              idDossier <- b_iddossier s
-              executeMany st $ getFilesInfoSqlValues (toSqlMaybe idDossier) filesInfos
+  s <- get 
+  liftIO $ do stmt <- (prepare (c s) insert_fichier)
+              filesInfos <- (mapM (getFileInfo (b_chemin s)) nomFichiers)
+              executeMany stmt $ getFilesInfoSqlValues (toSqlMaybe $ b_iddossier s) filesInfos
 
-recordSupport :: String -> String -> State BrowseState ()
+recordSupport :: String -> String -> StateWithIO BrowseState ()
 recordSupport chemin label = do
   s <- get
-  supportId <- return $ do supportid <- getNextSequenceValue (c s) "ct.support_id_support_seq"
-                           st <- prepare (c s) "INSERT INTO ct.support (id_support, nom, chck, date_creation) VALUES (?, ?, ?, LOCALTIMESTAMP)"
+  supportId <- liftIO $ do supportid <- getNextSequenceValue (c s) sequence_support
+                           st <- prepare (c s) insert_support
                            execute st [supportid, SqlString label, SqlInteger( 0 )]
                            return supportid
   put s{b_idsupport = supportId, rootPath = chemin}
   recordFolder "/"
 
-recordFolder :: String -> State BrowseState ()
+recordFolder :: String -> StateWithIO BrowseState ()
 recordFolder nomDossier = do
   s <- get
-  idDossier <- return $ do folderid <- getNextSequenceValue (c s) "ct.dossier_id_dossier_seq" 
-                           st <- prepare (c s) "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_parent, id_support) VALUES (?, ?, ?, ?, ?)"
-                           idDossier <- b_iddossier s
-                           chemin <- b_chemin s
-                           supportId <- b_idsupport s
-                           execute st [folderid, SqlString nomDossier, toSql (dropRootPath chemin (rootPath s)), toSqlMaybe idDossier, supportId]
+  idDossier <- liftIO $ do folderid <- getNextSequenceValue (c s) sequence_dossier
+                           st <- prepare (c s) insert_dossier
+                           execute st [folderid, SqlString nomDossier, toSql (dropRootPath (b_chemin s) (rootPath s)), toSqlMaybe (b_iddossier s), b_idsupport s]
                            return $ Just folderid
-  put s{b_iddossier = idDossier, b_chemin = msum [(b_chemin s), return "/", return nomDossier]}
-  tuple <- return $ do chemin <- b_chemin s
-                       contents <- getDirectoryContents chemin
+  put s{b_iddossier = idDossier, b_chemin = msum [b_chemin s, "/", nomDossier]}
+  tuple <- liftIO $ do contents <- getDirectoryContents (b_chemin s)
                        filteredContents <- return (dropWhile (\x -> x== "." || x== "..") contents)
-                       paths <- return $ map (normalise . (combine chemin)) filteredContents
+                       paths <- return $ map (normalise . (combine (b_chemin s))) filteredContents
                        files <- filterM ((liftM not) . doesDirectoryExist) paths
                        dirs <- filterM doesDirectoryExist paths
                        return (files,dirs)
-  recordFileNodes ((liftM fst) tuple)
-  sequence_ $ map recordFolder (snd $ unsafePerformIO tuple)
+  recordFileNodes (fst tuple)
+  sequence_ $ map recordFolder (snd tuple)
   where dropRootPath path rootPath = drop (length rootPath) path                     
 
-{--   
+{--
 instance Show (FileInfo) where
     show (FileInfo absoluteName fileName size calendar) =
                         show fileName ++ "\t" ++ show size ++ " bytes" ++ "\t" 
@@ -111,12 +104,11 @@ browseEachFolder l = foldr ((liftM2 (:)) . (browseFolder2 "" ) . joinPath . spli
 
 -- | retourne des informations sur un fichier
 getFileInfo 
-  :: IO String -- ^ le chemin relatif
+  :: String -- ^ le chemin relatif
   -> String -- ^ le nom du fichier
   -> IO FileInfo -- ^ la structure renvoyée contenant les informations sur le fichier
-getFileInfo path file = do
+getFileInfo chemin file = do
   catch (do
-    chemin <- path
     h <- openFile chemin ReadMode 
     size <- hFileSize h
     time <- getModificationTime chemin
