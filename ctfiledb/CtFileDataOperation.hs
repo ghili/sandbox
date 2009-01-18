@@ -5,7 +5,7 @@ where
 import Database.HDBC 
 import Database.HDBC.PostgreSQL 
 import CtDataAccess
-import System.Directory (getModificationTime, getDirectoryContents, doesDirectoryExist)
+import System.Directory (getModificationTime, getDirectoryContents, doesFileExist, doesDirectoryExist)
 import System.FilePath (joinPath, splitDirectories,dropDrive, dropExtension, takeExtension,
     pathSeparator,normalise, combine, dropTrailingPathSeparator)
 import System.IO
@@ -50,7 +50,7 @@ sequence_dossier = "ct.dossier_id_dossier_seq"
 execRecordSupport :: String -> String -> Connection -> IO BrowseState
 execRecordSupport chemin label dbh = withTransaction dbh $ (\conn ->  execStateT (recordSupport chemin label) $ BrowseState{iddossier = Nothing, idsupport = SqlNull, nom = label , rootPath=chemin, chemin = chemin, c = conn})
 
-recordFileNodes :: [String] -> BrowseState -> IO()
+recordFileNodes :: [String] -> BrowseState -> IO ()
 recordFileNodes nomFichiers s = do
    stmt <- (prepare (c s) insert_fichier)
    filesInfos <- (mapM (getFileInfo (chemin s)) nomFichiers)
@@ -62,7 +62,8 @@ recordSupport chemin label = do
   s <- get
   supportId <- liftIO $ do supportid <- getNextSequenceValue (c s) sequence_support
                            st <- prepare (c s) insert_support
-                           handleSqlError $ execute st [supportid, SqlString label, SqlInteger( 0 )]
+                           check <- checkFolder chemin
+                           handleSqlError $ execute st [supportid, SqlString label, SqlInteger( check )]
                            return supportid
   put s{idsupport = supportId, rootPath = chemin}
   recordFolder ""
@@ -79,16 +80,31 @@ recordFolder nomDossier = do
   s <- get
   res <- liftIO $ do 
     contents <- (liftM filterNotDots) $ getDirectoryContents (chemin s)
-    files <- filterM ((liftM not) . (doesDirectoryNameExist s)) contents
+    files <- filterM (doesFileNameExist s) contents
     recordFileNodes files s
     folders <- filterM (doesDirectoryNameExist s) contents
     mapM_ (\f->evalStateT (recordFolder f) s) folders
   return res
   where dropRootPath s = drop (length (rootPath s)) (chemin s)
-        filterNotDots = filter (\p -> p /= "." && p /="..")
         fullPath s relativePath = normalise $ combine (chemin s) relativePath
+        doesFileNameExist s fileName = doesFileExist(fullPath s fileName)
         doesDirectoryNameExist s dirName = doesDirectoryExist(fullPath s dirName)
 
+checkFolder :: String -> IO Integer
+checkFolder chemin = do
+  contents <- (liftM filterNotDots) $ getDirectoryContents chemin
+  files <- filterM doesFileExist contents
+  fileSizes <- mapM (getFileSize . (combine chemin)) files
+  folders <- filterM doesDirectoryExist contents
+  folderSizes <- mapM (checkFolder . (combine chemin)) folders
+  return $ (sum fileSizes) + (sum folderSizes)
+
+getFileSize chemin = do 
+  debugM logbase $ "check file " ++ chemin
+  h <- openFile chemin ReadMode 
+  hFileSize h
+  
+filterNotDots = filter (\p -> p /= "." && p /="..")
 
 instance Show (FileInfo) where
     show (FileInfo absoluteName fileName size calendar) =
