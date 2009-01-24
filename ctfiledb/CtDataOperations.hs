@@ -1,7 +1,6 @@
 
-module CtDataOperations(recordFolderTree, search, SearchCriteria(..)) where
+module CtDataOperations(search, SearchCriteria(..)) where
 
-import CtFileBrowsing
 import CtDataAccess
 import Data.Tree 
 import Database.HDBC 
@@ -14,56 +13,6 @@ import Text.Printf
 import Data.Maybe
 
 logbase = "CtDataOperations"
-
--- | Ouvre une connection à la base de donnée puis insère les données contenues
--- dans l'arbre.
-recordFolderTree  :: String -> Tree FolderInfo -> Connection -> IO()
-recordFolderTree name folderTree c = withTransaction c $ (\c -> do
-  supportid <- insertSupportInfo c name folderTree
-  insertTree c Nothing supportid folderTree)
-
-  
--- | Insère les données contenues dans l'arbre.
-insertTree  :: Connection  -> Maybe SqlValue  -> SqlValue  -> Tree FolderInfo  -> IO ()
-insertTree c parentid supportid (Node folderInfo subForest)= do
-  folderid <- insertFolderInfo c parentid supportid folderInfo
-  mapM_ (insertTree c folderid supportid) subForest
-
--- | insère les informations du dossier et de ses fichiers en base.
-insertFolderInfo :: Connection -> Maybe SqlValue -> SqlValue -> FolderInfo -> IO (Maybe SqlValue)
-insertFolderInfo c iddossierparent supportid (FolderInfo folderName folderPath files) = do
-  folderid <- getNextSequenceValue c "ct.dossier_id_dossier_seq" 
-  st <- prepare c "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_parent, id_support) VALUES (?, ?, ?, ?, ?)"
-  execute st  [folderid, SqlString folderName, toSql (dropDrive folderPath), toSqlMaybe iddossierparent, supportid]
-  -- insertion des fichiers
-  stfile <- prepare c "INSERT INTO ct.fichier (nom, extension, taille, date_fichier, id_dossier) VALUES (?, ?, ?, ?, ?)"
-  executeMany stfile (getFileInfoSqlValues folderid files)
-  return $ Just folderid
-
--- | transforme les informations sur les fichiers en valeurs sql avec  l'id du dossier
-getFileInfoSqlValues :: SqlValue  -> [FileInfo]  -> [[SqlValue]]
-getFileInfoSqlValues folderid files   = let fileInfoToSql (FileInfo absoluteName fileName size calendar) = [SqlString (dropExtension fileName), SqlString (takeExtension fileName), SqlInteger size, toSqlTimeStamp calendar , folderid]
-                                            gotAccess (NoAccess msg) = False
-                                            gotAccess _ = True
-                                           in map fileInfoToSql (filter gotAccess files)
-
--- | insère les informations sur le support
-insertSupportInfo :: Connection -> String -> Tree FolderInfo -> IO (SqlValue)
-insertSupportInfo c name tree = do
-  supportid <- getNextSequenceValue c "ct.support_id_support_seq"
-  st <- prepare c "INSERT INTO ct.support (id_support, nom, chck, date_creation) VALUES (?, ?, ?, LOCALTIMESTAMP)"
-  execute st [supportid, SqlString name, SqlInteger(checkFolder tree)]
-  return supportid
-
-checkFolder :: Tree FolderInfo -> Integer
-checkFolder (Node (FolderInfo f p files) subForest) = (foldr ((+) . checkFolder) 0 subForest) + (checkFile files)
-
-checkFile  :: [FileInfo] -> Integer
-checkFile ((FileInfo a f size c):xs) = size + (checkFile xs)
-checkFile []                         = 0
-checkFile _                          = 0
-
-
 
 data SearchCriteria = SearchCriteria {
       keyword :: String,

@@ -17,7 +17,7 @@ import Text.Printf
 import Data.Maybe
 import System.Log.Logger
 
-logbase = "CtFileDataOperation"
+-------------------
 
 data BrowseState = BrowseState {
       iddossier:: Maybe SqlValue,
@@ -37,7 +37,27 @@ data FileInfo = FileInfo {
     time :: CalendarTime 
 } | NoAccess String
 
-data FolderInfo = FolderInfo { folderName :: String, folderPath :: String, files :: [FileInfo]}
+instance Show (FileInfo) where
+    show (FileInfo absoluteName fileName size calendar) =
+                        show fileName ++ "\t" 
+                        ++ show size ++ " bytes" ++ "\t" 
+                        ++ (formatCalendarTime defaultTimeLocale "%d %b %Y %H:%M" calendar)
+    show (NoAccess x) = x
+
+data FolderInfo = FolderInfo {
+      folderName :: String, 
+      folderPath :: String, 
+      files :: [FileInfo]
+}
+
+instance Show (FolderInfo) where
+    show (FolderInfo folderName folderPath files) = 
+                        "\n" ++ show folderName 
+                           ++ " :\n" ++ (foldr ((++) . (++ "\n") . show) "" files)
+
+-------------------
+
+logbase = "CtFileDataOperation"
 
 insert_fichier = "INSERT INTO ct.fichier (id_dossier, nom, extension, taille, date_fichier) VALUES (?, ?, ?, ?, ?)"
 insert_support = "INSERT INTO ct.support (id_support, nom, chck, date_creation) VALUES (?, ?, ?, LOCALTIMESTAMP)"
@@ -45,6 +65,7 @@ insert_dossier = "INSERT INTO ct.dossier (id_dossier, nom, chemin, id_dossier_pa
 sequence_support = "ct.support_id_support_seq"
 sequence_dossier = "ct.dossier_id_dossier_seq" 
 
+-------------------
 
 execRecordSupport :: String -> String -> Connection -> IO BrowseState
 execRecordSupport chemin label dbh = 
@@ -69,7 +90,7 @@ recordSupport chemin label = do
   supportId <- liftIO $ do supportid <- getNextSequenceValue (c s) sequence_support
                            st <- prepare (c s) insert_support
                            check <- checkFolder chemin
-                           handleSqlError $ execute st [supportid, SqlString label, SqlInteger(check)]
+                           handleSqlError $ execute st [supportid, SqlString label, SqlInteger check]
                            return supportid
   put s{idsupport = supportId}
   recordFolder ""
@@ -113,36 +134,23 @@ checkFolder chemin = do
   
 filterNotDots = filter (\p -> p /= "." && p /="..")
 
-instance Show (FileInfo) where
-    show (FileInfo absoluteName fileName size calendar) =
-                        show fileName ++ "\t" 
-                        ++ show size ++ " bytes" ++ "\t" 
-                        ++ (formatCalendarTime defaultTimeLocale "%d %b %Y %H:%M" calendar)
-    show (NoAccess x) = x
-
-instance Show (FolderInfo) where
-    show (FolderInfo folderName folderPath files) = 
-                        "\n" ++ show folderName 
-                           ++ " :\n" ++ (foldr ((++) . (++ "\n") . show) "" files)
-
-
 -- | retourne des informations sur un fichier
 getFileInfo 
   :: String -- ^ le chemin relatif
   -> String -- ^ le nom du fichier
   -> IO FileInfo -- ^ la structure renvoyée contenant les informations sur le fichier
 getFileInfo chemin file = 
+    let filepath = combine chemin file in
     do catch (do
-               filepath <- return $ combine chemin file
-               h <- openFile filepath ReadMode 
-               size <- hFileSize h
-               time <- getModificationTime filepath
-               calendar <- toCalendarTime time
-               return $ FileInfo {absoluteName= filepath, 
-                                  fileName = file, 
-                                  size=size, 
-                                  time=calendar }
-             )(\error -> return $ NoAccess (show error))
+           h <- openFile filepath ReadMode 
+           size <- hFileSize h
+           time <- getModificationTime filepath
+           calendar <- toCalendarTime time
+           return $ FileInfo {absoluteName= filepath, 
+                              fileName = file, 
+                              size=size, 
+                              time=calendar }
+         )(\error -> return $ NoAccess (show error))
 
 -- transforme les informations sur les fichiers en valeurs sql avec  l'id du dossier
 getFilesInfoSqlValues :: SqlValue  -> [FileInfo]  -> [[SqlValue]]

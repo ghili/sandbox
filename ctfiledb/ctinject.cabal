@@ -8,7 +8,7 @@ Executable ctinject
   --Include-dirs: /home/local/include, .
   --Extra-lib-dirs: ~/.cabal/lib
   Main-is: ctinject.hs
-  Build-Depends:base, HDBC,hslogger, MissingH, HDBC-postgresql, containers, old-locale, old-time, filepath, directory
+  Build-Depends:base, HDBC,hslogger, MissingH, HDBC-postgresql, containers, old-locale, old-time, filepath, directory, mtl
   GHC-Options: -O2 -fglasgow-exts
   --LD-Options: -L/home/local/lib
   --CC-Options: -I/home/local/include
