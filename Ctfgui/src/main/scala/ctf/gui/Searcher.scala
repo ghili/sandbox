@@ -9,21 +9,19 @@ class Searcher(env:{val sqlMapper:SqlMapClient}) {
     import CustomConversions.convertList
 
     def searcher: Actor = actor {
-        loop{
-            react{
-                case source:Any =>
-                    println("searcher (" + self + ") <- "+source)
-                    source match {
-                        case criteria:FinderCriteria =>
-                            sender ! FichierResult(findFichier(FinderCriteriaAdapter(criteria)),source)
-                        case SearchAllSupport =>
-                            sender ! SupportResult(findAllSupport,source)
-                        case DossierParSupportSearchCriteria(idSupport,node) =>
-                            sender ! DossierResult(findDossierParSupport(idSupport),source)
-                        case FichierParDossierCriteria(idDossier) =>
-                            sender ! FichierResult(findFichierParDossier(idDossier),source)
-                    }
-            }
+        react{
+            case source:Any =>
+                println("searcher (" + self + ") <- "+source)
+                source match {
+                    case criteria:FinderCriteria =>
+                        sender ! FichierResult(findFichier(FinderCriteriaAdapter(criteria)),source)
+                    case SearchAllSupport =>
+                        sender ! SupportResult(findAllSupport,source)
+                    case DossierParSupportSearchCriteria(idSupport,node) =>
+                        sender ! DossierResult(findDossierParSupport(idSupport),source)
+                    case FichierParDossierCriteria(idDossier) =>
+                        sender ! FichierResult(findFichierParDossier(idDossier),source)
+                }
         }
     }
 

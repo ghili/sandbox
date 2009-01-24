@@ -51,7 +51,7 @@ class CtfView(env: {val controller:UIController}) extends Recherche {
 }
 
 
-sealed abstract case class DisplayItem
+sealed abstract class DisplayItem
 case class SupportDisplayItem(support:Support) extends DisplayItem { override def toString = support.nom}
 case class DossierDisplayItem(dossier:Dossier) extends DisplayItem { override def toString = dossier.nom}
 case class DossierRacineDisplayItem(override val dossier:Dossier, support:Support) extends DossierDisplayItem(dossier) {

@@ -24,7 +24,10 @@ object SizeCriteriaEnumeration extends Enumeration {
 case class SearchOption(number:Double,sizeUnit:SizeUnitEnumeration.Value, sizeCriteria:SizeCriteriaEnumeration.Value)
 case class FinderCriteria(var value:String,val options:List[SearchOption]) extends CriteriaMessage
 
-sealed abstract case class ResultListMessage(results:List[_], source:Any)
-case class SupportResult(supports:List[Support], override val source:Any) extends ResultListMessage(supports, source)
-case class FichierResult(fichiers:List[Fichier], override val source:Any) extends ResultListMessage(fichiers, source)
-case class DossierResult(dossiers:List[Dossier], override val source:Any) extends ResultListMessage(dossiers, source)
+sealed abstract case class ResultListMessage{
+    val results:List[_]
+    val source:Any
+}
+case class SupportResult(val results:List[Support], val source:Any) extends ResultListMessage
+case class FichierResult(val results:List[Fichier], val source:Any) extends ResultListMessage
+case class DossierResult(val results:List[Dossier], val source:Any) extends ResultListMessage
