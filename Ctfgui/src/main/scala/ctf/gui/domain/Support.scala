@@ -1,20 +1,17 @@
 
 package ctf.gui.domain
 
-import scala.reflect.BeanProperty
+import scala.reflect.BeanInfo
 import java.sql.Timestamp
 
+@BeanInfo
 class Support {
 
-    @BeanProperty
     var idSupport:Long = _
 
-    @BeanProperty
     var nom:String= _
 
-    @BeanProperty
     var chck:Long= _
 
-    @BeanProperty
     var dateCreation:Timestamp= _
 }
