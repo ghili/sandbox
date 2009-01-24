@@ -104,10 +104,8 @@ checkFolder :: String -> IO Integer
 checkFolder chemin = do
   contents <- liftM filterNotDots $ getDirectoryContents chemin
   paths <- return $ map (combine chemin) contents
-  files <- filterM doesFileExist paths
-  fileSizes <- mapM getFileSize files
-  folders <- filterM doesDirectoryExist paths
-  folderSizes <- mapM checkFolder folders
+  fileSizes <- filterM doesFileExist paths >>= mapM getFileSize 
+  folderSizes <- filterM doesDirectoryExist paths >>= mapM checkFolder 
   return $ (sum fileSizes) + (sum folderSizes)
     where getFileSize chemin = do 
                        h <- openFile chemin ReadMode 
@@ -133,15 +131,18 @@ getFileInfo
   :: String -- ^ le chemin relatif
   -> String -- ^ le nom du fichier
   -> IO FileInfo -- ^ la structure renvoyée contenant les informations sur le fichier
-getFileInfo chemin file = do
-  catch (do
-    filepath <- return $ combine chemin file
-    h <- openFile filepath ReadMode 
-    size <- hFileSize h
-    time <- getModificationTime filepath
-    calendar <- toCalendarTime time
-    return $ FileInfo {absoluteName= filepath, fileName = file, size=size, time=calendar })
-        (\error -> return $ NoAccess (show error))
+getFileInfo chemin file = 
+    do catch (do
+               filepath <- return $ combine chemin file
+               h <- openFile filepath ReadMode 
+               size <- hFileSize h
+               time <- getModificationTime filepath
+               calendar <- toCalendarTime time
+               return $ FileInfo {absoluteName= filepath, 
+                                  fileName = file, 
+                                  size=size, 
+                                  time=calendar }
+             )(\error -> return $ NoAccess (show error))
 
 -- transforme les informations sur les fichiers en valeurs sql avec  l'id du dossier
 getFilesInfoSqlValues :: SqlValue  -> [FileInfo]  -> [[SqlValue]]
