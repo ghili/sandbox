@@ -2,8 +2,8 @@
 
 package ctf.gui
 
-import com.ibatis.sqlmap.client._
-import com.ibatis.common.resources.Resources
+import _root_.com.ibatis.sqlmap.client._
+import _root_.com.ibatis.common.resources.Resources
 import java.util.{List => JavaList}
 import collection.jcl.BufferWrapper
 

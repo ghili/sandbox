@@ -16,6 +16,7 @@ import Control.Monad.State
 import Text.Printf
 import Data.Maybe
 import System.Log.Logger
+import Debug.Trace
 
 -------------------
 
@@ -70,54 +71,59 @@ sequence_dossier = "ct.dossier_id_dossier_seq"
 execRecordSupport :: String -> String -> Connection -> IO BrowseState
 execRecordSupport chemin label dbh = 
     withTransaction dbh $ (\conn ->  
-                               execStateT (recordSupport chemin label) BrowseState{
-                                                iddossier = Nothing, 
-                                                idsupport = SqlNull, 
-                                                nom = label , 
-                                                rootPath = dropTrailingPathSeparator chemin, 
-                                                chemin = chemin, 
-                                                c = conn})
+      execStateT (recordSupport chemin label) BrowseState{
+                             iddossier = Nothing, 
+                             idsupport = SqlNull, 
+                             nom = label , 
+                             rootPath = dropTrailingPathSeparator chemin, 
+                             chemin = chemin, 
+                             c = conn})
 
-recordFileNodes :: [String] -> BrowseState -> IO ()
-recordFileNodes nomFichiers s = do
-   stmt <- prepare (c s) insert_fichier
-   filesInfos <- mapM (getFileInfo $ chemin s) nomFichiers
-   handleSqlError $ executeMany stmt $ getFilesInfoSqlValues (toSqlMaybe $ iddossier s) filesInfos
+recordFileNodes :: Connection -> Maybe SqlValue -> [FileInfo] -> IO ()
+recordFileNodes conn iddossier filesInfos = do
+   stmt <- prepare conn insert_fichier
+   handleSqlError $
+     executeMany stmt $
+       getFilesInfoSqlValues (toSqlMaybe iddossier) filesInfos
 
 recordSupport :: String -> String -> StateWithIO BrowseState ()
 recordSupport chemin label = do
   s <- get
-  supportId <- liftIO $ do supportid <- getNextSequenceValue (c s) sequence_support
-                           st <- prepare (c s) insert_support
-                           check <- checkFolder chemin
-                           handleSqlError $ execute st [supportid, SqlString label, SqlInteger check]
-                           return supportid
+  supportId <- liftIO $ do 
+    supportid <- getNextSequenceValue (c s) sequence_support
+    st <- prepare (c s) insert_support
+    check <- checkFolder chemin
+    handleSqlError $ execute st [supportid, SqlString label, SqlInteger check]
+    return supportid
   put s{idsupport = supportId}
   recordFolder ""
 
 recordFolder :: String -> StateWithIO BrowseState ()
 recordFolder nomDossier = do
   s <- get
-  idDossier <- liftIO $ do folderid <- getNextSequenceValue (c s) sequence_dossier
-                           st <- prepare (c s) insert_dossier
-                           handleSqlError $ execute st [folderid, 
-                                                        SqlString nomDossier, 
-                                                        toSql (dropRootPath s), 
-                                                        toSqlMaybe (iddossier s), 
-                                                        idsupport s]
-                           return $ Just folderid
+  idDossier <- liftIO $ do 
+    folderid <- getNextSequenceValue (c s) sequence_dossier
+    st <- prepare (c s) insert_dossier
+    handleSqlError $ 
+      execute st [folderid, 
+                  SqlString nomDossier, 
+                  toSql (dropRootPath s), 
+                  toSqlMaybe (iddossier s), 
+                  idsupport s]
+    return $ Just folderid
   put s{iddossier = idDossier, chemin = combine (chemin s) nomDossier}
   s <- get
   res <- liftIO $ do 
     contents <- liftM filterNotDots $ getDirectoryContents (chemin s)
-    files <- filterM (doesFileNameExist s) contents
-    recordFileNodes files s
+    files <- filterM (isFile s) contents
+    filesInfos <- fileNamesToFileInfo (chemin s) files
+    recordFileNodes (c s) (iddossier s) filesInfos
     folders <- filterM (doesDirectoryNameExist s) contents
     mapM_ (\f->evalStateT (recordFolder f) s) folders
   return res
-  where dropRootPath s = drop (length (rootPath s) +1 ) (chemin s)
-        fullPath s relativePath = normalise $ combine (chemin s) relativePath
-        doesFileNameExist s fileName = doesFileExist(fullPath s fileName)
+  where dropRootPath s                   = drop (length (rootPath s) +1 ) (chemin s)
+        fullPath s relativePath          = normalise $ combine (chemin s) relativePath
+        isFile s fileName                = doesFileExist(fullPath s fileName)
         doesDirectoryNameExist s dirName = doesDirectoryExist(fullPath s dirName)
 
 -- calcule la somme des tailles des fichiers d'un répertoire
@@ -129,20 +135,24 @@ checkFolder chemin = do
   folderSizes <- filterM doesDirectoryExist paths >>= mapM checkFolder 
   return $ (sum fileSizes) + (sum folderSizes)
     where getFileSize chemin = do 
-                       h <- openFile chemin ReadMode 
-                       hFileSize h
+            h <- openFile chemin ReadMode 
+            hFileSize h
   
 filterNotDots = filter (\p -> p /= "." && p /="..")
 
+fileNamesToFileInfo :: String -> [String] -> IO [FileInfo]
+fileNamesToFileInfo chemin nomFichiers = mapM (fileNameToFileInfo chemin) nomFichiers
+
 -- | retourne des informations sur un fichier
-getFileInfo 
+fileNameToFileInfo 
   :: String -- ^ le chemin relatif
   -> String -- ^ le nom du fichier
   -> IO FileInfo -- ^ la structure renvoyée contenant les informations sur le fichier
-getFileInfo chemin file = 
+fileNameToFileInfo chemin file = 
     let filepath = combine chemin file in
-    do catch (do
-           h <- openFile filepath ReadMode 
+    do 
+      catch (do
+           h <- trace filepath $ openFile filepath ReadMode 
            size <- hFileSize h
            time <- getModificationTime filepath
            calendar <- toCalendarTime time
@@ -161,10 +171,11 @@ getFilesInfoSqlValues folderid files   =
 
 -- transforme les informations d'un fichier
 getFileInfoSqlValues :: SqlValue  -> FileInfo  -> [SqlValue]
-getFileInfoSqlValues folderid (FileInfo absoluteName fileName size calendar) = [SqlString (dropExtension fileName), 
-                                                                                SqlString (takeExtension fileName), 
-                                                                                SqlInteger size, 
-                                                                                toSqlTimeStamp calendar , 
-                                                                                folderid]
+getFileInfoSqlValues folderid (FileInfo absoluteName fileName size calendar) = 
+    [folderid,
+     SqlString (dropExtension fileName), 
+     SqlString (takeExtension fileName), 
+     SqlInteger size, 
+     toSqlTimeStamp calendar]
 getFileInfoSqlValues folderid (NoAccess msg)   =  []
 

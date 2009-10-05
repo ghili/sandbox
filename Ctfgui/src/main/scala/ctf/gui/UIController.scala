@@ -19,13 +19,13 @@ class UIController(env: {val searcher:Searcher
                     println("searchCoordinator ("+self+") <- "+result.results.size + " results for "+result.source+" found")
                     result match {
                         case fichierResult @ FichierResult(_,_:FinderCriteria) =>
-                            env.finderView.loadResultFileList(fichierResult.fichiers)
+                            env.finderView.loadResultFileList(fichierResult.results)
                         case fichierResult @ FichierResult(_,_:FichierParDossierCriteria) =>
-                            env.browserView.loadFileList(fichierResult.fichiers)
+                            env.browserView.loadFileList(fichierResult.results)
                         case supportResult:SupportResult =>
-                            env.browserView.loadSupportTree(supportResult.supports)
+                            env.browserView.loadSupportTree(supportResult.results)
                         case dossierResult:DossierResult =>
-                            val idDossierRacine = env.browserView.addDossierToNode(dossierResult.dossiers,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
+                            val idDossierRacine = env.browserView.addDossierToNode(dossierResult.results,dossierResult.source.asInstanceOf[DossierParSupportSearchCriteria].node)
                             env.searcher.searcher ! FichierParDossierCriteria(idDossierRacine)
                         case _ => throw new Exception("unknown result list "+ result)
                     }

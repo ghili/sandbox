@@ -8,7 +8,7 @@ class FinderCriteriaBuilderTest extends JUnit4(FinderCriteriaBuilderSpec)
 object FinderCriteriaBuilderSpec extends Specification {
 
     "the criteria builder" should {
-        "be able to parse a size unit" in {
+        "be able to parse a size unit" in { 
             FinderCriteriaBuilder.parse("ko", FinderCriteriaBuilder.sizeUnit) mustEqual SizeUnitEnumeration.ko
         }
 
